@@ -59,7 +59,7 @@ class Widget:
 
     @property
     def rect(self) -> Rect:
-        """Return widget bounds."""
+        """Return local widget bounds."""
         return self._rect
 
     @property
@@ -67,27 +67,74 @@ class Widget:
         """Return local X coordinate."""
         return self._rect.x
 
+    @x.setter
+    def x(
+        self,
+        value: int
+    ) -> None:
+        self.move_to(
+            value,
+            self.y
+        )
+
     @property
     def y(self) -> int:
         """Return local Y coordinate."""
         return self._rect.y
+
+    @y.setter
+    def y(
+        self,
+        value: int
+    ) -> None:
+        self.move_to(
+            self.x,
+            value
+        )
 
     @property
     def width(self) -> int:
         """Return widget width."""
         return self._rect.width
 
+    @width.setter
+    def width(
+        self,
+        value: int
+    ) -> None:
+        self.resize(
+            value,
+            self.height
+        )
+
     @property
     def height(self) -> int:
         """Return widget height."""
         return self._rect.height
+
+    @height.setter
+    def height(
+        self,
+        value: int
+    ) -> None:
+        self.resize(
+            self.width,
+            value
+        )
+
+    # ------------------------------------------------------------------
+    # Absolute coordinates
+    # ------------------------------------------------------------------
 
     @property
     def absolute_x(self) -> int:
         """Return absolute screen X coordinate."""
 
         if self._parent:
-            return self._parent.absolute_x + self.x
+            return (
+                self._parent.absolute_x +
+                self.x
+            )
 
         return self.x
 
@@ -96,22 +143,102 @@ class Widget:
         """Return absolute screen Y coordinate."""
 
         if self._parent:
-            return self._parent.absolute_y + self.y
+            return (
+                self._parent.absolute_y +
+                self.y
+            )
 
         return self.y
+
+    @property
+    def absolute_rect(self) -> Rect:
+        """Return absolute widget bounds."""
+
+        return Rect(
+            x=self.absolute_x,
+            y=self.absolute_y,
+            width=self.width,
+            height=self.height
+        )
+
+    @property
+    def screen_x(self) -> int:
+        """Alias for absolute_x."""
+
+        return self.absolute_x
+
+    @property
+    def screen_y(self) -> int:
+        """Alias for absolute_y."""
+
+        return self.absolute_y
+
+    @property
+    def screen_rect(self) -> Rect:
+        """Alias for absolute_rect."""
+
+        return self.absolute_rect
+
+    # ------------------------------------------------------------------
+    # Geometry manipulation
+    # ------------------------------------------------------------------
+
+    def move_to(
+        self,
+        x: int,
+        y: int
+    ) -> None:
+        """
+        Move widget to a new local position.
+        """
+
+        if (
+            self._rect.x == x and
+            self._rect.y == y
+        ):
+            return
+
+        self._rect.x = x
+        self._rect.y = y
+
+        self.invalidate()
+
+    def resize(
+        self,
+        width: int,
+        height: int
+    ) -> None:
+        """
+        Resize widget.
+        """
+
+        if (
+            self._rect.width == width and
+            self._rect.height == height
+        ):
+            return
+
+        self._rect.width = width
+        self._rect.height = height
+
+        self.invalidate()
 
     def contains(
         self,
         x: int,
         y: int
     ) -> bool:
-        """Return True if a point lies inside the widget."""
+        """
+        Return True if a screen coordinate lies inside
+        this widget.
+        """
 
         ax = self.absolute_x
         ay = self.absolute_y
 
         return (
-            ax <= x < (ax + self.width) and
+            ax <= x < (ax + self.width)
+            and
             ay <= y < (ay + self.height)
         )
 
@@ -130,9 +257,12 @@ class Widget:
         value: bool
     ) -> None:
 
-        if self._visible != value:
-            self._visible = value
-            self.invalidate()
+        if self._visible == value:
+            return
+
+        self._visible = value
+
+        self.invalidate()
 
     @property
     def enabled(self) -> bool:
@@ -145,9 +275,12 @@ class Widget:
         value: bool
     ) -> None:
 
-        if self._enabled != value:
-            self._enabled = value
-            self.invalidate()
+        if self._enabled == value:
+            return
+
+        self._enabled = value
+
+        self.invalidate()
 
     # ------------------------------------------------------------------
     # Dirty tracking
@@ -159,7 +292,11 @@ class Widget:
         return self._dirty
 
     def invalidate(self) -> None:
-        """Mark widget as requiring redraw."""
+        """
+        Mark widget as requiring redraw.
+
+        Dirty state propagates up to the root screen.
+        """
 
         self._dirty = True
 
@@ -175,7 +312,10 @@ class Widget:
     # Drawing
     # ------------------------------------------------------------------
 
-    def draw(self, renderer) -> None:
+    def draw(
+        self,
+        renderer
+    ) -> None:
         """
         Draw widget contents.
 
@@ -188,20 +328,15 @@ class Widget:
     # Input
     # ------------------------------------------------------------------
 
-    def on_touch(self, event) -> bool:
+    def on_touch(
+        self,
+        event
+    ) -> bool:
         """
-        Handle a touch event.
-
-        The event may represent:
-        - TouchEvent.DOWN
-        - TouchEvent.MOVE
-        - TouchEvent.UP
-
-        Args:
-            event: TouchEvent instance.
+        Handle touch event.
 
         Returns:
-            True if the event was consumed.
+            True if event was consumed.
         """
 
         return False
@@ -213,6 +348,7 @@ class Widget:
     @property
     def parent(self):
         """Return parent widget."""
+
         return self._parent
 
     def on_attach(
@@ -224,7 +360,7 @@ class Widget:
         self._parent = parent
 
     def on_detach(self) -> None:
-        """Detach widget from its parent."""
+        """Detach widget from parent."""
 
         self._parent = None
 

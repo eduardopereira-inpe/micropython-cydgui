@@ -2,78 +2,167 @@
 cydgui.utils.constants
 ======================
 
-Framework-wide numeric and string constants.
+Framework-wide constants.
 
-Naming conventions
-------------------
-- Display geometry defaults are prefixed with ``DISPLAY_``.
-- Widget defaults are prefixed with the widget name in upper-case.
-- All colours are 16-bit RGB565 integers; import from
-  :mod:`cydgui.utils.colors` for the full named-colour set.
-
-Notes
------
-- These constants represent *default* values.  Every component that uses them
-  accepts an explicit override so the defaults can be changed application-wide
-  by editing this single file.
+This module centralizes common values used throughout cydgui
+to avoid magic numbers and improve consistency.
 """
 
-# ---------------------------------------------------------------------------
-# Display defaults (CYD: ESP32 + ILI9341)
-# ---------------------------------------------------------------------------
 
-DISPLAY_WIDTH  = 240   # pixels
-DISPLAY_HEIGHT = 320   # pixels
-DISPLAY_ROTATION = 0   # 0, 90, 180, 270 degrees
+class Constants:
+    """Framework constants."""
 
-# ---------------------------------------------------------------------------
-# Frame rate / timing
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Display
+    # ---------------------------------------------------------
 
-TARGET_FPS        = 30         # target frames per second
-FRAME_INTERVAL_MS = 1000 // TARGET_FPS   # milliseconds per frame
+    DISPLAY_WIDTH = 240
+    DISPLAY_HEIGHT = 320
 
-# ---------------------------------------------------------------------------
-# Widget geometry defaults
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Font metrics
+    # ---------------------------------------------------------
 
-WIDGET_DEFAULT_WIDTH   = 80    # pixels
-WIDGET_DEFAULT_HEIGHT  = 30    # pixels
-WIDGET_DEFAULT_PADDING = 4     # pixels
-WIDGET_DEFAULT_RADIUS  = 4     # corner radius in pixels
+    DEFAULT_FONT_WIDTH = 8
+    DEFAULT_FONT_HEIGHT = 8
 
-# ---------------------------------------------------------------------------
-# Layout defaults
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Spacing
+    # ---------------------------------------------------------
 
-LAYOUT_DEFAULT_SPACING = 4     # pixels between children
-LAYOUT_DEFAULT_PADDING = 4     # inner margin pixels
+    SPACING_XS = 2
+    SPACING_SM = 4
+    SPACING_MD = 8
+    SPACING_LG = 12
+    SPACING_XL = 16
 
-# ---------------------------------------------------------------------------
-# CheckBox / Switch defaults
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Border radius
+    # ---------------------------------------------------------
 
-CHECKBOX_BOX_SIZE  = 18        # pixels
-SWITCH_WIDTH       = 44        # pixels
-SWITCH_HEIGHT      = 22        # pixels
+    RADIUS_NONE = 0
+    RADIUS_SM = 2
+    RADIUS_MD = 4
+    RADIUS_LG = 8
 
-# ---------------------------------------------------------------------------
-# ProgressBar defaults
-# ---------------------------------------------------------------------------
+    DEFAULT_RADIUS = RADIUS_MD
 
-PROGRESSBAR_DEFAULT_WIDTH  = 100   # pixels
-PROGRESSBAR_DEFAULT_HEIGHT = 16    # pixels
+    # ---------------------------------------------------------
+    # Border sizes
+    # ---------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# TextBox defaults
-# ---------------------------------------------------------------------------
+    BORDER_NONE = 0
+    BORDER_THIN = 1
+    BORDER_MEDIUM = 2
+    BORDER_THICK = 3
 
-TEXTBOX_DEFAULT_WIDTH  = 120   # pixels
-TEXTBOX_DEFAULT_HEIGHT = 24    # pixels
-TEXTBOX_CURSOR_WIDTH   = 2     # pixels
+    DEFAULT_BORDER = BORDER_THIN
 
-# ---------------------------------------------------------------------------
-# Touch / input
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Widget sizes
+    # ---------------------------------------------------------
 
-TOUCH_DEBOUNCE_MS = 50   # milliseconds — ignore touch events within this window
+    BUTTON_WIDTH = 120
+    BUTTON_HEIGHT = 40
+
+    TEXTBOX_WIDTH = 180
+    TEXTBOX_HEIGHT = 30
+
+    CHECKBOX_SIZE = 20
+
+    SWITCH_WIDTH = 50
+    SWITCH_HEIGHT = 24
+
+    PROGRESSBAR_HEIGHT = 12
+
+    # ---------------------------------------------------------
+    # Layout defaults
+    # ---------------------------------------------------------
+
+    ROW_SPACING = 4
+    COLUMN_SPACING = 4
+    GRID_SPACING = 4
+
+    # ---------------------------------------------------------
+    # Touch
+    # ---------------------------------------------------------
+
+    TOUCH_POLL_INTERVAL_MS = 20
+
+    # ---------------------------------------------------------
+    # Rendering
+    # ---------------------------------------------------------
+
+    FRAME_DELAY_MS = 16
+
+    # ~60 FPS
+    TARGET_FPS = 60
+
+    # ---------------------------------------------------------
+    # Text
+    # ---------------------------------------------------------
+
+    TEXT_PADDING_X = 4
+    TEXT_PADDING_Y = 2
+
+    # ---------------------------------------------------------
+    # ProgressBar
+    # ---------------------------------------------------------
+
+    PROGRESS_MIN = 0
+    PROGRESS_MAX = 100
+
+    # ---------------------------------------------------------
+    # TextBox
+    # ---------------------------------------------------------
+
+    TEXTBOX_MAX_LENGTH = 64
+
+    # ---------------------------------------------------------
+    # Canvas
+    # ---------------------------------------------------------
+
+    CANVAS_DEFAULT_WIDTH = 100
+    CANVAS_DEFAULT_HEIGHT = 100
+
+    # ---------------------------------------------------------
+    # Animation
+    # ---------------------------------------------------------
+
+    ANIMATION_STEP = 1
+    ANIMATION_DELAY_MS = 20
+
+    # ---------------------------------------------------------
+    # Theme
+    # ---------------------------------------------------------
+
+    THEME_LIGHT = "light"
+    THEME_DARK = "dark"
+
+    DEFAULT_THEME = THEME_DARK
+
+    # ---------------------------------------------------------
+    # Alignment
+    # ---------------------------------------------------------
+
+    ALIGN_LEFT = 0
+    ALIGN_CENTER = 1
+    ALIGN_RIGHT = 2
+
+    ALIGN_TOP = 0
+    ALIGN_MIDDLE = 1
+    ALIGN_BOTTOM = 2
+
+    # ---------------------------------------------------------
+    # Widget states
+    # ---------------------------------------------------------
+
+    STATE_NORMAL = 0
+    STATE_PRESSED = 1
+    STATE_DISABLED = 2
+
+    # ---------------------------------------------------------
+    # Navigation
+    # ---------------------------------------------------------
+
+    MAX_SCREEN_STACK = 16

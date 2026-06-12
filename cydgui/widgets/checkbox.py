@@ -2,113 +2,252 @@
 cydgui.widgets.checkbox
 =======================
 
-Boolean toggle widget with a check-mark indicator.
+Checkbox widget.
 
-A ``CheckBox`` displays a small square box with an optional check mark and an
-optional text label to its right.  Tapping the widget toggles its state and
-fires the ``on_change`` callback.
+A Checkbox represents a boolean value that can be toggled by the user.
 
-Design notes
-------------
-- State is a simple boolean: ``True`` = checked, ``False`` = unchecked.
-- The check-mark is drawn by the renderer (e.g., a diagonal cross or a
-  tick-shaped polyline).
-- ``on_change`` signature: ``on_change(checkbox, checked: bool) -> None``.
+Features
+--------
+- Checked / unchecked state
+- Optional text label
+- Optional callback
+- Touch interaction
+- Renderer agnostic
 """
 
 from cydgui.core.widget import Widget
 
 
-class CheckBox(Widget):
-    """A toggleable check-box with an optional label.
-
-    Parameters
-    ----------
-    x, y:
-        Top-left corner.
-    text:
-        Label text displayed to the right of the box.
-    checked:
-        Initial checked state.
-    on_change:
-        Callable ``on_change(checkbox, checked) -> None``.
-    box_size:
-        Side length of the check box in pixels.
-    color:
-        Check-mark and border colour (RGB565).  Defaults to theme foreground.
-    bg:
-        Box fill colour when unchecked (RGB565).  Defaults to theme background.
-    check_color:
-        Box fill colour when checked (RGB565).  Defaults to theme primary.
-    """
+class Checkbox(Widget):
+    """Checkbox widget."""
 
     def __init__(
         self,
         x: int = 0,
         y: int = 0,
+        size: int = 20,
         text: str = "",
         checked: bool = False,
+        color: int = 0xFFFF,
+        bg: int = 0x0000,
+        check_color: int = 0x07E0,
+        font=None,
         on_change=None,
-        box_size: int = 18,
-        color: int = None,
-        bg: int = None,
-        check_color: int = None,
     ) -> None:
-        super().__init__(x=x, y=y)
-        # TODO: store text, checked, on_change, box_size, color, bg,
-        #       check_color
-        # TODO: compute widget width from box_size + text width
-        pass
+        """
+        Initialize checkbox.
+
+        Args:
+            x: Left position.
+            y: Top position.
+            size: Checkbox square size.
+            text: Optional label.
+            checked: Initial state.
+            color: Border and text color.
+            bg: Background color.
+            check_color: Check mark color.
+            font: Optional font.
+            on_change: Callback(checkbox, checked).
+        """
+
+        width = size
+
+        if text:
+            width += size + 4 + (len(text) * 8)
+
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=size
+        )
+
+        self._size = size
+
+        self._text = text
+
+        self._checked = checked
+
+        self._color = color
+        self._bg = bg
+
+        self._check_color = check_color
+
+        self._font = font
+
+        self._on_change = on_change
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def checked(self) -> bool:
+        """Return current state."""
+        return self._checked
 
     # ------------------------------------------------------------------
     # State
     # ------------------------------------------------------------------
 
-    def set_checked(self, value: bool) -> None:
-        """Update checked state and request a redraw.
-
-        TODO: store value, call invalidate()
+    def set_checked(
+        self,
+        value: bool
+    ) -> None:
         """
-        pass
+        Set checkbox state.
 
-    def is_checked(self) -> bool:
-        """Return current checked state.
-
-        TODO: return self._checked
+        Args:
+            value: New state.
         """
-        return False
+
+        value = bool(value)
+
+        if self._checked == value:
+            return
+
+        self._checked = value
+
+        self.invalidate()
+
+        if callable(self._on_change):
+            self._on_change(
+                self,
+                self._checked
+            )
 
     def toggle(self) -> None:
-        """Toggle checked state.
+        """Toggle checkbox state."""
 
-        TODO: call set_checked(not self._checked)
-        TODO: fire on_change callback
-        """
-        pass
+        self.set_checked(
+            not self._checked
+        )
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
-    def draw(self, renderer) -> None:
-        """Render the checkbox via *renderer*.
+    def draw(
+        self,
+        renderer
+    ) -> None:
+        """Draw checkbox."""
 
-        TODO: draw box rectangle (filled with check_color if checked, bg otherwise)
-        TODO: draw check mark if checked
-        TODO: draw label text to the right
-        TODO: clear self._dirty
-        """
-        pass
+        if not self.visible:
+            return
+
+        x = self.absolute_x
+        y = self.absolute_y
+
+        #
+        # Checkbox square
+        #
+
+        renderer.fill_rect(
+            x,
+            y,
+            self._size,
+            self._size,
+            self._bg
+        )
+
+        renderer.draw_rect(
+            x,
+            y,
+            self._size,
+            self._size,
+            self._color
+        )
+
+        #
+        # Check mark
+        #
+
+        if self._checked:
+
+            renderer.draw_line(
+                x + 4,
+                y + self._size // 2,
+                x + self._size // 2,
+                y + self._size - 4,
+                self._check_color
+            )
+
+            renderer.draw_line(
+                x + self._size // 2,
+                y + self._size - 4,
+                x + self._size - 4,
+                y + 4,
+                self._check_color
+            )
+
+        #
+        # Label
+        #
+
+        if self._text:
+
+            text_x = x + self._size + 4
+
+            text_h = renderer.text_size(
+                self._text,
+                self._font
+            )[1]
+
+            text_y = (
+                y +
+                (self._size - text_h) // 2
+            )
+
+            renderer.draw_text(
+                text_x,
+                text_y,
+                self._text,
+                self._color,
+                self._font
+            )
+
+        self.validate()
 
     # ------------------------------------------------------------------
-    # Input events
+    # Input
     # ------------------------------------------------------------------
 
-    def on_touch(self, event) -> bool:
-        """Toggle state on tap.
-
-        TODO: check if tap is within widget bounds
-        TODO: call toggle()
-        TODO: return True
+    def on_touch(
+        self,
+        event
+    ) -> bool:
         """
-        return False
+        Handle touch event.
+
+        Returns:
+            True if consumed.
+        """
+
+        if not self.enabled:
+            return False
+
+        if not event.is_down:
+            return False
+
+        if not self.contains(
+            event.x,
+            event.y
+        ):
+            return False
+
+        self.toggle()
+
+        return True
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"Checkbox("
+            f"checked={self._checked}, "
+            f"text='{self._text}')"
+        )

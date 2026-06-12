@@ -11,7 +11,6 @@ Renderer API.
 """
 
 from cydgui.core.widget import Widget
-from cydgui.core.touch_event import TouchEvent
 
 
 class Button(Widget):
@@ -56,20 +55,17 @@ class Button(Widget):
 
     @property
     def text(self) -> str:
-        """Button text."""
-
+        """Return button text."""
         return self._text
 
     @property
     def disabled(self) -> bool:
-        """Disabled state."""
-
+        """Return disabled state."""
         return self._disabled
 
     @property
     def pressed(self) -> bool:
-        """Pressed state."""
-
+        """Return pressed state."""
         return self._pressed
 
     # ------------------------------------------------------------------
@@ -113,6 +109,9 @@ class Button(Widget):
         if not self.visible:
             return
 
+        x = self.absolute_x
+        y = self.absolute_y
+
         bg = self._bg
 
         if self._disabled:
@@ -122,8 +121,8 @@ class Button(Widget):
             bg = self._bg >> 1
 
         renderer.fill_round_rect(
-            self.x,
-            self.y,
+            x,
+            y,
             self.width,
             self.height,
             self._radius,
@@ -137,12 +136,12 @@ class Button(Widget):
             )
 
             text_x = (
-                self.x +
+                x +
                 ((self.width - text_w) // 2)
             )
 
             text_y = (
-                self.y +
+                y +
                 ((self.height - text_h) // 2)
             )
 
@@ -153,7 +152,7 @@ class Button(Widget):
                 self._color
             )
 
-        self._dirty = False
+        self.validate()
 
     # ------------------------------------------------------------------
     # Input
@@ -173,6 +172,10 @@ class Button(Widget):
             event.y
         )
 
+        #
+        # Touch Down
+        #
+
         if event.is_down:
 
             if not inside:
@@ -182,6 +185,10 @@ class Button(Widget):
             self.invalidate()
 
             return True
+
+        #
+        # Touch Up
+        #
 
         if event.is_up:
 
@@ -199,7 +206,14 @@ class Button(Widget):
 
             return True
 
-        return self._pressed
+        #
+        # Touch Move
+        #
+
+        if event.is_move:
+            return self._pressed
+
+        return False
 
     # ------------------------------------------------------------------
     # Debug

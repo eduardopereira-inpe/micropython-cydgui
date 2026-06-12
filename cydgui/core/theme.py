@@ -2,100 +2,161 @@
 cydgui.core.theme
 =================
 
-Visual style definition for the entire application.
+Theme definitions used by cydgui widgets.
 
-A ``Theme`` aggregates colours, font references, spacing constants, and any
-other visual parameters that widgets read when they draw themselves.  Widgets
-receive a theme reference from the renderer (or directly from the app) so they
-never need to hard-code colours.
+A Theme centralizes colors, dimensions and default visual
+properties used throughout the framework.
 
-Design notes
+Design goals
 ------------
-- Colours are stored as 16-bit RGB565 integers (native format for ILI9341 and
-  similar displays).
-- Font references are driver-agnostic: a font is anything with an ``id`` that
-  the concrete renderer can interpret.
-- Only one theme is active at a time; it is owned by ``App``.
-- Themes are designed to be swapped at runtime (e.g., day / night mode).
-
-See also
---------
-:mod:`cydgui.utils.colors` for colour helper utilities.
-:mod:`cydgui.utils.constants` for default values.
+- Lightweight.
+- MicroPython friendly.
+- No dynamic styling engine.
+- Renderer agnostic.
 """
 
 from cydgui.utils.colors import Colors
-
-
-class FontRef:
-    """A driver-agnostic reference to a font resource.
-
-    Parameters
-    ----------
-    name:
-        Human-readable font name (e.g. ``"default"``, ``"monospace"``).
-    size:
-        Font size in points or pixel height, depending on the renderer.
-    """
-
-    def __init__(self, name: str = "default", size: int = 12) -> None:
-        # TODO: store name and size
-        pass
+from cydgui.utils.constants import Constants
 
 
 class Theme:
-    """Defines the visual style for the entire application.
-
-    All colour attributes are 16-bit RGB565 integers unless noted otherwise.
-
-    Parameters
-    ----------
-    background:
-        Screen / window background colour.
-    foreground:
-        Default text / foreground colour.
-    primary:
-        Primary accent colour (e.g., button fill).
-    secondary:
-        Secondary accent colour.
-    border:
-        Default border / outline colour.
-    font:
-        Default :class:`FontRef` for body text.
-    font_title:
-        :class:`FontRef` for heading / title text.
-    """
+    """Framework theme."""
 
     def __init__(
         self,
-        background: int = Colors.BLACK,
-        foreground: int = Colors.WHITE,
-        primary: int = Colors.BLUE,
-        secondary: int = Colors.CYAN,
-        border: int = Colors.GRAY,
-        font: FontRef = None,
-        font_title: FontRef = None,
+        background: int = Colors.BACKGROUND,
+        foreground: int = Colors.TEXT,
+        primary: int = Colors.PRIMARY,
+        secondary: int = Colors.SECONDARY,
+        success: int = Colors.SUCCESS,
+        warning: int = Colors.WARNING,
+        error: int = Colors.ERROR,
+        border: int = Colors.BORDER,
+        disabled: int = Colors.DISABLED,
+        panel: int = Colors.PANEL,
+        radius: int = Constants.DEFAULT_RADIUS,
+        font=None,
     ) -> None:
-        # TODO: store all colour and font references
-        # TODO: create default FontRef instances when None is passed
-        pass
+        """
+        Initialize theme.
+
+        Args:
+            background: Default background color.
+            foreground: Default text color.
+            primary: Primary accent color.
+            secondary: Secondary accent color.
+            success: Success color.
+            warning: Warning color.
+            error: Error color.
+            border: Border color.
+            disabled: Disabled widget color.
+            panel: Panel background color.
+            radius: Default corner radius.
+            font: Default font.
+        """
+
+        self.background = background
+        self.foreground = foreground
+
+        self.primary = primary
+        self.secondary = secondary
+
+        self.success = success
+        self.warning = warning
+        self.error = error
+
+        self.border = border
+        self.disabled = disabled
+
+        self.panel = panel
+
+        self.radius = radius
+
+        self.font = font
 
     # ------------------------------------------------------------------
-    # Factory helpers
+    # Factory methods
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def dark() -> "Theme":
-        """Return a ready-made dark theme.
-
-        TODO: return Theme with dark-mode colour values
+    @classmethod
+    def dark(cls):
         """
-        pass
+        Create dark theme.
 
-    @staticmethod
-    def light() -> "Theme":
-        """Return a ready-made light theme.
-
-        TODO: return Theme with light-mode colour values
+        Returns:
+            Theme instance.
         """
-        pass
+
+        return cls(
+            background=Colors.BLACK,
+            foreground=Colors.WHITE,
+            primary=Colors.BLUE,
+            secondary=Colors.DARK_GRAY,
+            success=Colors.GREEN,
+            warning=Colors.YELLOW,
+            error=Colors.RED,
+            border=Colors.LIGHT_GRAY,
+            disabled=Colors.GRAY,
+            panel=Colors.DARK_GRAY,
+        )
+
+    @classmethod
+    def light(cls):
+        """
+        Create light theme.
+
+        Returns:
+            Theme instance.
+        """
+
+        return cls(
+            background=Colors.WHITE,
+            foreground=Colors.BLACK,
+            primary=Colors.BLUE,
+            secondary=Colors.LIGHT_GRAY,
+            success=Colors.GREEN,
+            warning=Colors.ORANGE,
+            error=Colors.RED,
+            border=Colors.GRAY,
+            disabled=Colors.LIGHT_GRAY,
+            panel=Colors.WHITE,
+        )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def copy(self):
+        """
+        Create a copy of the theme.
+
+        Returns:
+            Theme instance.
+        """
+
+        return Theme(
+            background=self.background,
+            foreground=self.foreground,
+            primary=self.primary,
+            secondary=self.secondary,
+            success=self.success,
+            warning=self.warning,
+            error=self.error,
+            border=self.border,
+            disabled=self.disabled,
+            panel=self.panel,
+            radius=self.radius,
+            font=self.font,
+        )
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"Theme("
+            f"background=0x{self.background:04X}, "
+            f"foreground=0x{self.foreground:04X})"
+        )

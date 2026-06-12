@@ -2,97 +2,190 @@
 cydgui.layouts.grid
 ===================
 
-Grid layout manager.
+Grid layout container.
 
-``Grid`` is a :class:`~cydgui.core.container.Container` that positions its
-children in a fixed-column grid.  Children are placed left-to-right,
-top-to-bottom, wrapping to a new row when the column count is reached.
-
-Parameters controlled by ``Grid``
------------------------------------
-- ``columns``  — number of columns in the grid (required).
-- ``spacing_x`` — horizontal gap between cells in pixels.
-- ``spacing_y`` — vertical gap between rows in pixels.
-- ``padding``   — inner margin applied to all four sides of the grid.
-- ``cell_width`` — fixed cell width.  Set to 0 to let the grid compute it
-  from the container width and column count.
-- ``cell_height`` — fixed cell height.  Set to 0 to use the tallest child.
-
-Notes
------
-- Call ``layout()`` after adding/removing children to recalculate positions.
-- ``layout()`` is also called automatically by ``add()`` and ``remove()``.
+Automatically arranges child widgets into rows and columns.
 """
 
 from cydgui.core.container import Container
 
 
 class Grid(Container):
-    """Arranges children in a fixed-column grid.
-
-    Parameters
-    ----------
-    x, y:
-        Top-left position of the grid.
-    width:
-        Total available width.
-    columns:
-        Number of columns.
-    spacing_x, spacing_y:
-        Horizontal and vertical gap between cells.
-    padding:
-        Inner margin on all four sides.
-    cell_width, cell_height:
-        Fixed cell dimensions.  Use 0 to let the grid auto-compute them.
-    """
+    """Grid layout container."""
 
     def __init__(
         self,
         x: int = 0,
         y: int = 0,
-        width: int = 0,
+        width: int = 100,
+        height: int = 100,
+        rows: int = 1,
         columns: int = 1,
-        spacing_x: int = 0,
-        spacing_y: int = 0,
-        padding: int = 0,
-        cell_width: int = 0,
-        cell_height: int = 0,
+        spacing: int = 0,
     ) -> None:
-        super().__init__(x=x, y=y, width=width)
-        # TODO: store columns, spacing_x, spacing_y, padding, cell_width,
-        #       cell_height
-        pass
+        """
+        Initialize grid.
+
+        Args:
+            x: Left position.
+            y: Top position.
+            width: Grid width.
+            height: Grid height.
+            rows: Number of rows.
+            columns: Number of columns.
+            spacing: Cell spacing.
+        """
+
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height
+        )
+
+        self._rows = max(1, rows)
+        self._columns = max(1, columns)
+        self._spacing = spacing
 
     # ------------------------------------------------------------------
     # Layout
     # ------------------------------------------------------------------
 
-    def layout(self) -> None:
-        """Recalculate child positions on the grid.
+    def _layout_children(self) -> None:
+        """Position child widgets."""
 
-        TODO: compute cell_width from container width if not specified
-        TODO: iterate over children; compute (col, row) index and pixel position
-        TODO: update self._rect.height to fit all rows + padding
-        TODO: call self.invalidate()
-        """
-        pass
+        if not self.children:
+            return
+
+        cell_width = (
+            self.width -
+            ((self._columns - 1) * self._spacing)
+        ) // self._columns
+
+        cell_height = (
+            self.height -
+            ((self._rows - 1) * self._spacing)
+        ) // self._rows
+
+        for index, child in enumerate(self.children):
+
+            row = index // self._columns
+            column = index % self._columns
+
+            if row >= self._rows:
+                break
+
+            child.rect.x = (
+                column *
+                (cell_width + self._spacing)
+            )
+
+            child.rect.y = (
+                row *
+                (cell_height + self._spacing)
+            )
+
+            #
+            # Stretch child to cell
+            #
+
+            child.rect.width = cell_width
+            child.rect.height = cell_height
 
     # ------------------------------------------------------------------
-    # Overrides
+    # Children management
     # ------------------------------------------------------------------
 
-    def add(self, widget) -> None:
-        """Add *widget* and re-run layout.
+    def add(
+        self,
+        widget
+    ) -> None:
+        """Add child widget."""
 
-        TODO: call super().add(widget)
-        TODO: call self.layout()
-        """
-        pass
+        super().add(widget)
 
-    def remove(self, widget) -> None:
-        """Remove *widget* and re-run layout.
+        self._layout_children()
 
-        TODO: call super().remove(widget)
-        TODO: call self.layout()
-        """
-        pass
+        self.invalidate()
+
+    def remove(
+        self,
+        widget
+    ) -> None:
+        """Remove child widget."""
+
+        super().remove(widget)
+
+        self._layout_children()
+
+        self.invalidate()
+
+    # ------------------------------------------------------------------
+    # Layout control
+    # ------------------------------------------------------------------
+
+    def relayout(self) -> None:
+        """Force layout recalculation."""
+
+        self._layout_children()
+
+        self.invalidate()
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def rows(self) -> int:
+        return self._rows
+
+    @property
+    def columns(self) -> int:
+        return self._columns
+
+    @property
+    def spacing(self) -> int:
+        return self._spacing
+
+    def set_rows(
+        self,
+        value: int
+    ) -> None:
+        """Update row count."""
+
+        self._rows = max(1, value)
+
+        self.relayout()
+
+    def set_columns(
+        self,
+        value: int
+    ) -> None:
+        """Update column count."""
+
+        self._columns = max(1, value)
+
+        self.relayout()
+
+    def set_spacing(
+        self,
+        value: int
+    ) -> None:
+        """Update spacing."""
+
+        self._spacing = max(0, value)
+
+        self.relayout()
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"Grid("
+            f"rows={self._rows}, "
+            f"columns={self._columns}, "
+            f"children={len(self.children)})"
+        )

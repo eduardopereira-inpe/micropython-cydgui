@@ -108,22 +108,6 @@ class Rect:
     # ------------------------------------------------------------------
 
     @property
-    def x(self) -> int:
-        return self._x
-
-    @property
-    def y(self) -> int:
-        return self._y
-
-    @property
-    def width(self) -> int:
-        return self._width
-
-    @property
-    def height(self) -> int:
-        return self._height
-
-    @property
     def right(self) -> int:
         """Return x + width (exclusive right edge)."""
         return self._x + self._width
@@ -142,6 +126,38 @@ class Rect:
     def cy(self) -> int:
         """Return the vertical centre y-coordinate."""
         return self._y + (self._height // 2)
+    
+    @property
+    def x(self) -> int:
+        return self._x
+
+    @x.setter
+    def x(self, value: int) -> None:
+        self._x = value
+
+    @property
+    def y(self) -> int:
+        return self._y
+
+    @y.setter
+    def y(self, value: int) -> None:
+        self._y = value
+
+    @property
+    def width(self) -> int:
+        return self._width
+
+    @width.setter
+    def width(self, value: int) -> None:
+        self._width = value
+
+    @property
+    def height(self) -> int:
+        return self._height
+
+    @height.setter
+    def height(self, value: int) -> None:
+        self._height = value
 
     # ------------------------------------------------------------------
     # Geometric operations

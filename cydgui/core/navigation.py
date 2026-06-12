@@ -2,99 +2,166 @@
 cydgui.core.navigation
 ======================
 
-Screen navigation stack for the cydgui framework.
+Screen navigation manager.
 
-The ``Navigation`` class manages a stack of :class:`~cydgui.core.screen.Screen`
-objects, allowing the application to:
+Responsible for managing the screen stack and handling
+screen transitions.
 
-- ``push(screen)`` — display a new screen on top of the current one.
-- ``pop()``         — return to the previous screen.
-- ``replace(screen)`` — swap the top screen without growing the stack.
-
-The navigation object notifies screens of lifecycle events (``on_enter``,
-``on_leave``) and informs the :class:`~cydgui.core.events.EventDispatcher` of
-the active screen after each transition.
-
-Design notes
+Design goals
 ------------
-- The stack never becomes empty; ``pop()`` on a single-item stack is a no-op.
-- Navigation does not reference the renderer directly; it leaves display
-  invalidation to the App.
+- Lightweight.
+- No renderer dependency.
+- No touch dependency.
+- Compatible with MicroPython.
 """
+
+from cydgui.core.screen import Screen
 
 
 class Navigation:
-    """Manages a stack of screens and drives screen lifecycle callbacks.
+    """Screen navigation stack."""
 
-    Parameters
-    ----------
-    dispatcher:
-        The application's :class:`~cydgui.core.events.EventDispatcher`; it is
-        updated after every screen transition so touch events are routed to the
-        correct screen.
-    """
+    def __init__(self) -> None:
+        """Initialize navigation."""
 
-    def __init__(self, dispatcher) -> None:
-        # TODO: store dispatcher reference
-        # TODO: initialise stack list: self._stack = []
-        pass
+        self._stack = []
 
     # ------------------------------------------------------------------
-    # Stack operations
+    # Properties
     # ------------------------------------------------------------------
-
-    def push(self, screen) -> None:
-        """Push *screen* onto the stack.
-
-        The previous screen receives ``on_leave()``.
-        The new screen receives ``on_enter()``.
-        The dispatcher's active screen is updated.
-
-        TODO: call current().on_leave() if stack is not empty
-        TODO: append screen to self._stack
-        TODO: call screen.on_enter()
-        TODO: update dispatcher active screen
-        """
-        pass
-
-    def pop(self) -> None:
-        """Pop the top screen from the stack.
-
-        Does nothing if only one screen remains.
-
-        TODO: guard against empty / single-item stack
-        TODO: call current().on_leave()
-        TODO: pop from self._stack
-        TODO: call current().on_enter() (the newly exposed screen)
-        TODO: update dispatcher active screen
-        """
-        pass
-
-    def replace(self, screen) -> None:
-        """Replace the current top screen with *screen*.
-
-        TODO: call current().on_leave()
-        TODO: replace top of stack with screen
-        TODO: call screen.on_enter()
-        TODO: update dispatcher active screen
-        """
-        pass
-
-    # ------------------------------------------------------------------
-    # Inspection
-    # ------------------------------------------------------------------
-
-    def current(self):
-        """Return the currently active screen, or None if the stack is empty.
-
-        TODO: return self._stack[-1] if self._stack else None
-        """
-        return None
 
     @property
-    def depth(self) -> int:
-        """Return the number of screens currently in the stack.
-
-        TODO: return len(self._stack)
+    def current(self):
         """
-        return 0
+        Return active screen.
+
+        Returns:
+            Screen or None.
+        """
+
+        if not self._stack:
+            return None
+
+        return self._stack[-1]
+
+    @property
+    def size(self) -> int:
+        """Return stack size."""
+
+        return len(self._stack)
+
+    @property
+    def empty(self) -> bool:
+        """Return True when stack is empty."""
+
+        return len(self._stack) == 0
+
+    # ------------------------------------------------------------------
+    # Navigation
+    # ------------------------------------------------------------------
+
+    def push(
+        self,
+        screen: Screen
+    ) -> None:
+        """
+        Push screen onto stack.
+
+        Args:
+            screen: Screen instance.
+        """
+
+        if screen is None:
+            return
+
+        current = self.current
+
+        if current:
+            current.on_leave()
+
+        self._stack.append(screen)
+
+        screen.on_enter()
+
+    def pop(self):
+        """
+        Pop current screen.
+
+        Returns:
+            Removed screen or None.
+        """
+
+        if not self._stack:
+            return None
+
+        current = self._stack.pop()
+
+        current.on_leave()
+
+        if self.current:
+            self.current.on_enter()
+
+        return current
+
+    def replace(
+        self,
+        screen: Screen
+    ) -> None:
+        """
+        Replace current screen.
+
+        Args:
+            screen: New screen.
+        """
+
+        self.pop()
+
+        self.push(screen)
+
+    def clear(self) -> None:
+        """Remove all screens."""
+
+        while self._stack:
+            screen = self._stack.pop()
+
+            try:
+                screen.on_leave()
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def contains(
+        self,
+        screen: Screen
+    ) -> bool:
+        """
+        Check if screen exists in stack.
+
+        Args:
+            screen: Screen instance.
+
+        Returns:
+            bool
+        """
+
+        return screen in self._stack
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        current = self.current
+
+        if current is None:
+            return "Navigation(empty)"
+
+        return (
+            f"Navigation("
+            f"screens={len(self._stack)}, "
+            f"current='{current.name}')"
+        )

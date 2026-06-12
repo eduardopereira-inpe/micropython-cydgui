@@ -4,16 +4,16 @@ cydgui.app
 
 Core application object.
 
-The App is responsible for:
+Responsibilities
+----------------
+- Hold renderer and touch driver references.
+- Manage screen navigation.
+- Poll touch events.
+- Generate TouchEvent objects.
+- Render dirty screens.
+- Run the async application loop.
 
-- Holding the active screen.
-- Polling the touch driver.
-- Generating TouchEvent instances.
-- Rendering dirty screens.
-- Running the async event loop.
-
-This implementation is intentionally lightweight and suitable
-for MicroPython devices such as the Cheap Yellow Display (CYD).
+Designed for MicroPython and the Cheap Yellow Display.
 """
 
 try:
@@ -23,6 +23,7 @@ except ImportError:
 
 
 from cydgui.core.touch_event import TouchEvent
+from cydgui.core.navigation import Navigation
 
 
 class App:
@@ -31,8 +32,8 @@ class App:
     def __init__(
         self,
         renderer,
-        screen,
         touch=None,
+        screen=None,
         frame_delay_ms: int = 16
     ) -> None:
         """
@@ -41,17 +42,16 @@ class App:
         Args:
             renderer: Renderer instance.
             touch: Optional touch driver.
-            frame_delay_ms: Frame delay in milliseconds.
+            screen: Optional initial screen.
+            frame_delay_ms: Main loop delay.
         """
 
         self._renderer = renderer
         self._touch = touch
 
-        
-
         self._frame_delay_ms = frame_delay_ms
 
-        self._screen = None
+        self._navigation = Navigation()
 
         self._running = False
 
@@ -60,39 +60,73 @@ class App:
         self._last_x = 0
         self._last_y = 0
         
-        self.set_screen(screen=screen)
+        self._routes = {}
+
+        if screen is not None:
+            self.set_screen(screen)
 
     # ------------------------------------------------------------------
-    # Screen management
+    # Navigation
     # ------------------------------------------------------------------
 
     @property
     def screen(self):
-        """Return active screen."""
+        """Return current active screen."""
 
-        return self._screen
+        return self._navigation.current
 
     def set_screen(
         self,
         screen
     ) -> None:
         """
-        Set active screen.
+        Replace current screen.
 
         Args:
             screen: Screen instance.
         """
 
-        if self._screen is screen:
+        self._navigation.clear()
+
+        if screen is not None:
+
+            screen.app = self
+
+            self._navigation.push(screen)
+
+    def push(
+        self,
+        screen
+    ) -> None:
+        """
+        Push a screen onto the navigation stack.
+
+        Args:
+            screen: Screen instance.
+        """
+
+        if screen is None:
             return
 
-        if self._screen:
-            self._screen.on_leave()
+        screen.app = self
 
-        self._screen = screen
+        self._navigation.push(screen)
 
-        if self._screen:
-            self._screen.on_enter()
+    def pop(self):
+        """
+        Pop current screen.
+
+        Returns:
+            Removed screen.
+        """
+
+        return self._navigation.pop()
+
+    @property
+    def navigation(self):
+        """Return navigation manager."""
+
+        return self._navigation
 
     # ------------------------------------------------------------------
     # Touch processing
@@ -100,7 +134,7 @@ class App:
 
     def _poll_touch(self):
         """
-        Poll touch driver and generate TouchEvent.
+        Poll touch driver.
 
         Returns:
             TouchEvent or None.
@@ -153,13 +187,15 @@ class App:
     def _render(self) -> None:
         """Render active screen."""
 
-        if self._screen is None:
+        screen = self.screen
+
+        if screen is None:
             return
 
-        if not self._screen.dirty:
+        if not screen.dirty:
             return
 
-        self._screen.draw(
+        screen.draw(
             self._renderer
         )
 
@@ -170,7 +206,7 @@ class App:
     # ------------------------------------------------------------------
 
     async def _run_async(self) -> None:
-        """Async application loop."""
+        """Application async loop."""
 
         self._running = True
 
@@ -178,13 +214,13 @@ class App:
 
             event = self._poll_touch()
 
+            screen = self.screen
+
             if (
                 event is not None and
-                self._screen is not None
+                screen is not None
             ):
-                self._screen.dispatch_touch(
-                    event
-                )
+                screen.dispatch_touch(event)
 
             self._render()
 
@@ -202,15 +238,33 @@ class App:
     # ------------------------------------------------------------------
 
     def stop(self) -> None:
-        """Stop application loop."""
+        """Stop application."""
 
         self._running = False
 
     def run(self) -> None:
-        """Run application."""
+        """Start application."""
 
         asyncio.run(
             self._run_async()
+        )
+        
+    def route(
+        self,
+        name,
+        view_class
+    ):
+        self._routes[name] = view_class
+        
+    def navigate(
+        self,
+        name
+    ):
+
+        view_class = self._routes[name]
+
+        self.set_screen(
+            view_class(self)
         )
 
     # ------------------------------------------------------------------
@@ -221,6 +275,6 @@ class App:
 
         return (
             f"App("
-            f"screen={self._screen}, "
+            f"screen={self.screen}, "
             f"running={self._running})"
         )

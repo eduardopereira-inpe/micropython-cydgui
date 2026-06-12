@@ -1,38 +1,23 @@
-
 """
 cydgui.core.screen
 ==================
 
 A Screen represents a complete application view and acts as the
 root container of a widget hierarchy.
-
-Responsibilities
-----------------
-- Host top-level widgets.
-- Act as the root of the widget tree.
-- Manage screen lifecycle callbacks.
-- Track invalidation state.
-- Forward rendering to child widgets.
-- Forward touch events to the widget tree.
-
-Notes
------
-- A Screen does not know anything about the display hardware.
-- A Screen does not interact directly with the renderer.
-- Navigation decides which Screen is currently active.
 """
 
 from cydgui.core.container import Container
 
 
 class Screen(Container):
-    """Root container representing a full application screen.
+    """Root container representing a full application screen."""
 
-    Args:
-        name: Optional screen identifier.
-    """
+    def __init__(
+        self,
+        name: str = "",
+        background: int = 0x0000
+    ) -> None:
 
-    def __init__(self, name: str = "") -> None:
         super().__init__(
             x=0,
             y=0,
@@ -41,51 +26,60 @@ class Screen(Container):
         )
 
         self.name = name
+        self.background = background
+
         self._dirty = True
+        self._needs_clear = False
+
+    # ------------------------------------------------------------------
+    # Dirty state
+    # ------------------------------------------------------------------
 
     @property
     def dirty(self) -> bool:
-        """Return the current invalidation state."""
+        """Return screen invalidation state."""
         return self._dirty
 
-    # ------------------------------------------------------------------
-    # Invalidation
-    # ------------------------------------------------------------------
-
     def invalidate(self) -> None:
-        """Mark the screen as requiring redraw."""
+        """Mark screen as requiring redraw."""
         self._dirty = True
+
+    def validate(self) -> None:
+        """Mark screen as rendered."""
+        self._dirty = False
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw the widget tree.
+        """
+        Draw the complete screen.
 
-        Args:
-            renderer: Active renderer instance.
+        The screen is responsible for clearing the display
+        before drawing the widget tree.
         """
 
         if not self.visible:
             return
+        
+        if self._needs_clear:
+
+            renderer.clear(self.background)
+
+            self._needs_clear = False
 
         super().draw(renderer)
 
-        self._dirty = False
+        self.validate()
 
     # ------------------------------------------------------------------
-    # Input events
+    # Input
     # ------------------------------------------------------------------
 
     def dispatch_touch(self, event) -> bool:
-        """Dispatch a touch event through the widget tree.
-
-        Args:
-            event: TouchEvent instance.
-
-        Returns:
-            True if the event was handled.
+        """
+        Dispatch touch event through widget tree.
         """
 
         return self.on_touch(event)
@@ -95,12 +89,12 @@ class Screen(Container):
     # ------------------------------------------------------------------
 
     def on_enter(self) -> None:
-        """Called when the screen becomes active."""
-
+        """Called when screen becomes active."""
         self.invalidate()
+        self._needs_clear = True
 
     def on_leave(self) -> None:
-        """Called before the screen is deactivated."""
+        """Called before screen is removed."""
         pass
 
     # ------------------------------------------------------------------
@@ -108,7 +102,6 @@ class Screen(Container):
     # ------------------------------------------------------------------
 
     def __repr__(self) -> str:
-        """Return a debug representation."""
 
         return (
             f"Screen("

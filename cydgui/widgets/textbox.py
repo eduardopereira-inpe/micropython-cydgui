@@ -2,154 +2,270 @@
 cydgui.widgets.textbox
 ======================
 
-Single-line or multi-line text input widget.
-
-A ``TextBox`` allows the user to enter and edit text.  On touch-enabled
-devices a software keyboard (not included in this framework) must be
-integrated externally; the textbox simply stores and displays a string and
-provides an API for external input sources to modify it.
-
-Design notes
-------------
-- Characters are appended / deleted via ``append(char)`` and ``backspace()``.
-- The displayed content is scrolled horizontally when it overflows the widget
-  width (single-line mode).
-- ``on_change`` callback fires whenever the text content changes:
-  ``on_change(textbox, new_text) -> None``.
-- ``on_submit`` callback fires on Enter / confirm: ``on_submit(textbox) -> None``.
+Single-line editable text widget.
 """
 
 from cydgui.core.widget import Widget
 
 
 class TextBox(Widget):
-    """Editable text input widget.
-
-    Parameters
-    ----------
-    x, y:
-        Top-left corner.
-    width, height:
-        Dimensions in pixels.
-    text:
-        Initial text content.
-    placeholder:
-        Hint text shown when the widget is empty.
-    max_length:
-        Maximum number of characters (0 = unlimited).
-    password:
-        When True, characters are displayed as asterisks.
-    on_change:
-        Callable ``on_change(textbox, text) -> None``.
-    on_submit:
-        Callable ``on_submit(textbox) -> None``.
-    color:
-        Text colour (RGB565).  Defaults to theme foreground.
-    bg:
-        Background colour (RGB565).  Defaults to theme background.
-    border_color:
-        Border outline colour (RGB565).  Defaults to theme border.
-    """
+    """Single-line editable text box."""
 
     def __init__(
         self,
         x: int = 0,
         y: int = 0,
         width: int = 120,
-        height: int = 24,
+        height: int = 30,
         text: str = "",
-        placeholder: str = "",
-        max_length: int = 0,
+        color: int = 0xFFFF,
+        bg: int = 0x0000,
+        border_color: int = 0xFFFF,
+        radius: int = 2,
+        max_length: int = 64,
         password: bool = False,
-        on_change=None,
-        on_submit=None,
-        color: int = None,
-        bg: int = None,
-        border_color: int = None,
+        font=None,
     ) -> None:
-        super().__init__(x=x, y=y, width=width, height=height)
-        # TODO: store all parameters
-        # TODO: initialise _focused = False, _cursor = 0
-        pass
+
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height
+        )
+
+        self._text = text
+        self._color = color
+        self._bg = bg
+
+        self._border_color = border_color
+        self._radius = radius
+
+        self._font = font
+
+        self._max_length = max_length
+        self._password = password
+
+        self._focused = False
+        self._cursor_position = len(text)
 
     # ------------------------------------------------------------------
-    # Text manipulation
+    # Properties
     # ------------------------------------------------------------------
 
-    def append(self, char: str) -> None:
-        """Append a character at the current cursor position.
+    @property
+    def text(self) -> str:
+        """Return current text."""
+        return self._text
 
-        TODO: check max_length
-        TODO: insert char at cursor, advance cursor
-        TODO: fire on_change callback
-        TODO: call invalidate()
-        """
-        pass
+    @property
+    def focused(self) -> bool:
+        """Return focus state."""
+        return self._focused
+
+    # ------------------------------------------------------------------
+    # Text operations
+    # ------------------------------------------------------------------
+
+    def set_text(
+        self,
+        value: str
+    ) -> None:
+        """Replace textbox contents."""
+
+        value = str(value)
+
+        if len(value) > self._max_length:
+            value = value[:self._max_length]
+
+        self._text = value
+        self._cursor_position = len(value)
+
+        self.invalidate()
+
+    def clear(self) -> None:
+        """Clear textbox."""
+
+        self._text = ""
+        self._cursor_position = 0
+
+        self.invalidate()
+
+    def insert(
+        self,
+        value: str
+    ) -> None:
+        """Insert text at cursor position."""
+
+        if not value:
+            return
+
+        if len(self._text) >= self._max_length:
+            return
+
+        left = self._text[:self._cursor_position]
+        right = self._text[self._cursor_position:]
+
+        self._text = left + value + right
+
+        if len(self._text) > self._max_length:
+            self._text = self._text[:self._max_length]
+
+        self._cursor_position = len(self._text)
+
+        self.invalidate()
 
     def backspace(self) -> None:
-        """Delete the character before the cursor.
+        """Remove previous character."""
 
-        TODO: remove character at cursor - 1
-        TODO: move cursor back
-        TODO: fire on_change callback
-        TODO: call invalidate()
-        """
-        pass
+        if not self._text:
+            return
 
-    def set_text(self, value: str) -> None:
-        """Replace current text with *value*.
+        if self._cursor_position <= 0:
+            return
 
-        TODO: store value, reset cursor, fire on_change, call invalidate()
-        """
-        pass
+        left = self._text[:self._cursor_position - 1]
+        right = self._text[self._cursor_position:]
 
-    def get_text(self) -> str:
-        """Return the current text content.
+        self._text = left + right
 
-        TODO: return self._text
-        """
-        return ""
+        self._cursor_position -= 1
 
-    def submit(self) -> None:
-        """Trigger the on_submit callback.
-
-        TODO: call self._on_submit(self) if set
-        """
-        pass
+        self.invalidate()
 
     # ------------------------------------------------------------------
     # Focus
     # ------------------------------------------------------------------
 
-    def set_focused(self, focused: bool) -> None:
-        """Update focus state (shows/hides cursor).
+    def focus(self) -> None:
+        """Give focus to textbox."""
 
-        TODO: store _focused, call invalidate()
-        """
-        pass
+        if not self._focused:
+            self._focused = True
+            self.invalidate()
+
+    def blur(self) -> None:
+        """Remove focus."""
+
+        if self._focused:
+            self._focused = False
+            self.invalidate()
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
-    def draw(self, renderer) -> None:
-        """Render the text box via *renderer*.
+    def draw(
+        self,
+        renderer
+    ) -> None:
 
-        TODO: draw background rect
-        TODO: draw border (highlight if focused)
-        TODO: draw text or placeholder
-        TODO: draw cursor if focused
-        TODO: clear self._dirty
-        """
-        pass
+        if not self.visible:
+            return
+
+        x = self.absolute_x
+        y = self.absolute_y
+
+        renderer.fill_round_rect(
+            x,
+            y,
+            self.width,
+            self.height,
+            self._radius,
+            self._bg
+        )
+
+        renderer.draw_round_rect(
+            x,
+            y,
+            self.width,
+            self.height,
+            self._radius,
+            self._border_color
+        )
+
+        display_text = self._text
+
+        if self._password:
+            display_text = "*" * len(display_text)
+
+        text_w, text_h = renderer.text_size(
+            display_text,
+            self._font
+        )
+
+        text_x = x + 4
+
+        text_y = (
+            y +
+            ((self.height - text_h) // 2)
+        )
+
+        renderer.draw_text(
+            text_x,
+            text_y,
+            display_text,
+            self._color,
+            self._font
+        )
+
+        #
+        # Cursor
+        #
+
+        if self._focused:
+
+            cursor_x = text_x + text_w + 1
+
+            renderer.draw_line(
+                cursor_x,
+                y + 4,
+                cursor_x,
+                y + self.height - 5,
+                self._color
+            )
+
+        self.validate()
 
     # ------------------------------------------------------------------
-    # Input events
+    # Input
     # ------------------------------------------------------------------
 
-    def on_touch(self, event) -> bool:
-        """Gain focus on tap.
+    def on_touch(
+        self,
+        event
+    ) -> bool:
 
-        TODO: call set_focused(True), return True
-        """
+        if not self.enabled:
+            return False
+
+        if not event.is_down:
+            return False
+
+        if self.contains(
+            event.x,
+            event.y
+        ):
+
+            self.focus()
+
+            return True
+
+        self.blur()
+
         return False
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"TextBox("
+            f"text='{self._text}', "
+            f"x={self.x}, "
+            f"y={self.y}, "
+            f"width={self.width}, "
+            f"height={self.height})"
+        )

@@ -2,12 +2,10 @@ from cydgui.driver import CYD
 from cydgui.render.ili9341_renderer import ILI9341Renderer
 
 from cydgui.app import App
-
 from cydgui.core.view import View
 
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
-from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.textbox import TextBox
 from cydgui.widgets.checkbox import Checkbox
 from cydgui.widgets.switch import Switch
@@ -20,23 +18,31 @@ import uasyncio as asyncio
 
 
 # ============================================================
-# Main View
+# Demo View
 # ============================================================
 
-class MainView(View):
+class DemoView(View):
 
     def build(self):
+
+        # ----------------------------------------------------
+        # Title
+        # ----------------------------------------------------
 
         self.add(
             Label(
                 x=0,
-                y=5,
+                y=10,
                 width=240,
                 height=20,
-                text="Main View",
+                text="Layout Test",
                 align=Label.CENTER
             )
         )
+
+        # ----------------------------------------------------
+        # TextBox
+        # ----------------------------------------------------
 
         self.textbox = TextBox(
             x=20,
@@ -49,49 +55,78 @@ class MainView(View):
 
         self.add(self.textbox)
 
-        self.progress = ProgressBar(
-            x=10,
-            y=300,
-            width=220,
-            height=12,
-            value=0
-        )
-
-        self.add(self.progress)
+        # ----------------------------------------------------
+        # Column
+        # ----------------------------------------------------
 
         self.controls = Column(
             x=20,
             y=90,
             width=200,
             height=80,
-            spacing=8
+            spacing=10
         )
 
         self.add(self.controls)
 
+        # ----------------------------------------------------
+        # Checkbox
+        # ----------------------------------------------------
+
         self.checkbox = Checkbox(
-            text="Enable feature",
+            text="Enable Feature",
+            checked=False,
             on_change=self.on_checkbox
         )
 
-        self.controls.add(self.checkbox)
+        self.controls.add(
+            self.checkbox
+        )
+
+        # ----------------------------------------------------
+        # Switch
+        # ----------------------------------------------------
 
         self.switch = Switch(
             checked=False,
             on_change=self.on_switch
         )
 
-        self.controls.add(self.switch)
+        self.controls.add(
+            self.switch
+        )
+
+        # ----------------------------------------------------
+        # Progress
+        # ----------------------------------------------------
+
+        self.progress = ProgressBar(
+            x=20,
+            y=200,
+            width=200,
+            height=15,
+            value=0
+        )
+
+        self.add(
+            self.progress
+        )
+
+        # ----------------------------------------------------
+        # Row
+        # ----------------------------------------------------
 
         self.buttons = Row(
             x=10,
-            y=220,
+            y=150,
             width=220,
             height=40,
             spacing=10
         )
 
-        self.add(self.buttons)
+        self.add(
+            self.buttons
+        )
 
         self.buttons.add(
             Button(
@@ -106,28 +141,36 @@ class MainView(View):
             Button(
                 width=100,
                 height=40,
-                text="Settings",
-                on_press=self.on_settings
+                text="Reset",
+                on_press=self.on_reset
             )
         )
 
-    # --------------------------------------------------------
+    # ========================================================
     # Events
-    # --------------------------------------------------------
+    # ========================================================
 
     def on_checkbox(self, widget, checked):
 
         self.textbox.set_text(
-            "Checkbox ON" if checked else "Checkbox OFF"
+            "Checkbox ON"
+            if checked
+            else "Checkbox OFF"
         )
 
     def on_switch(self, widget, checked):
 
         self.textbox.set_text(
-            "Switch ON" if checked else "Switch OFF"
+            "Switch ON"
+            if checked
+            else "Switch OFF"
         )
 
     async def animate_progress(self):
+
+        self.textbox.set_text(
+            "Running..."
+        )
 
         await self.progress.animate_to(
             100,
@@ -143,66 +186,33 @@ class MainView(View):
             delay_ms=20
         )
 
-    def on_start(self, button):
-
         self.textbox.set_text(
-            "Running..."
+            "Finished"
         )
+
+    def on_start(self, button):
 
         asyncio.create_task(
             self.animate_progress()
         )
 
-    def on_settings(self, button):
+    def on_reset(self, button):
 
-        self.app.push(
-            SettingsView()
+        self.textbox.set_text(
+            "Ready"
         )
 
-
-# ============================================================
-# Settings View
-# ============================================================
-
-class SettingsView(View):
-
-    def build(self):
-
-        self.add(
-            Canvas(
-                x=0,
-                y=0,
-                width=240,
-                height=320,
-                bg=0x001F
-            )
+        self.progress.set_value(
+            0
         )
 
-        self.add(
-            Label(
-                x=0,
-                y=20,
-                width=240,
-                height=20,
-                text="Settings",
-                align=Label.CENTER
-            )
+        self.checkbox.set_checked(
+            False
         )
 
-        self.add(
-            Button(
-                x=60,
-                y=260,
-                width=120,
-                height=40,
-                text="Back",
-                on_press=self.on_back
-            )
+        self.switch.set_checked(
+            False
         )
-
-    def on_back(self, button):
-
-        self.app.pop()
 
 
 # ============================================================
@@ -217,7 +227,7 @@ renderer = ILI9341Renderer(
 
 
 # ============================================================
-# Application
+# App
 # ============================================================
 
 app = App(
@@ -226,7 +236,7 @@ app = App(
 )
 
 app.set_screen(
-    MainView()
+    DemoView()
 )
 
 app.run()
