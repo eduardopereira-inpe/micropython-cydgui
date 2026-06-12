@@ -2,147 +2,102 @@
 cydgui.core.events
 ==================
 
-Event types and the ``EventDispatcher`` used to route input events through the
-widget tree.
+Simple event dispatcher for touch input.
 
-Event model
------------
-- Events are plain objects (no subclassing of ``Exception``).
-- The dispatcher polls the input driver (touch, keyboard, …) and produces
-  ``Event`` instances.
-- Events are passed to the active screen's ``dispatch_touch`` method.
-- Listeners can also be registered directly on the dispatcher for global
-  shortcuts or custom event types.
-
-Adding a new event type
------------------------
-1. Add a constant to :data:`EventType`.
-2. Create a corresponding ``Event`` subclass if extra fields are needed.
-3. Emit it from the input driver adapter.
-
-Notes
------
-- Compatible with MicroPython: no use of ``dataclasses``, ``enum.Enum``, or
-  other CPython-only stdlib.
+This module converts raw touch state into high-level TouchEvent
+objects and forwards them to the active screen.
 """
 
+from cydgui.core.touch_event import TouchEvent
 
-# ---------------------------------------------------------------------------
-# Event type constants
-# ---------------------------------------------------------------------------
-
-class EventType:
-    """Namespace for event type identifiers.
-
-    TODO: add more event types as needed (e.g. SWIPE, KEY_PRESS, …)
-    """
-
-    TOUCH_DOWN = "touch_down"
-    TOUCH_MOVE = "touch_move"
-    TOUCH_UP = "touch_up"
-    CUSTOM = "custom"
-
-
-# ---------------------------------------------------------------------------
-# Event objects
-# ---------------------------------------------------------------------------
-
-class Event:
-    """Generic event object.
-
-    Parameters
-    ----------
-    event_type:
-        One of the :class:`EventType` constants.
-    """
-
-    def __init__(self, event_type: str) -> None:
-        # TODO: store event_type
-        # TODO: store timestamp (utime.ticks_ms())
-        pass
-
-
-class TouchEvent(Event):
-    """Touch / pointer event carrying screen coordinates.
-
-    Parameters
-    ----------
-    event_type:
-        Should be one of ``TOUCH_DOWN``, ``TOUCH_MOVE``, or ``TOUCH_UP``.
-    x, y:
-        Touch coordinates in screen pixels.
-    """
-
-    def __init__(self, event_type: str, x: int, y: int) -> None:
-        super().__init__(event_type)
-        # TODO: store x and y coordinates
-        pass
-
-
-# ---------------------------------------------------------------------------
-# EventDispatcher
-# ---------------------------------------------------------------------------
 
 class EventDispatcher:
-    """Routes events from input drivers to the active screen.
+    """Converts raw touch input into TouchEvent stream."""
 
-    Usage
-    -----
-    ::
-
-        dispatcher = EventDispatcher()
-        dispatcher.add_listener(EventType.TOUCH_DOWN, my_handler)
-        dispatcher.dispatch(TouchEvent(EventType.TOUCH_DOWN, x=100, y=200))
-
-    Design notes
-    ------------
-    - Listeners are plain callables: ``handler(event) -> None``.
-    - No global listener registry; the instance owns its own listeners.
-    - The active screen is injected by the App after each navigation change.
-    """
-
-    def __init__(self) -> None:
-        # TODO: initialise listener dict: {event_type: [callables]}
-        # TODO: store reference to active screen (None initially)
-        pass
-
-    # ------------------------------------------------------------------
-    # Listener management
-    # ------------------------------------------------------------------
-
-    def add_listener(self, event_type: str, handler) -> None:
-        """Register *handler* to be called when *event_type* events occur.
-
-        TODO: append handler to self._listeners[event_type]
+    def __init__(self, touch_device=None) -> None:
         """
-        pass
-
-    def remove_listener(self, event_type: str, handler) -> None:
-        """Unregister *handler* for *event_type*.
-
-        TODO: remove handler from self._listeners[event_type]
+        Args:
+            touch_device: Hardware touch driver (XPT2046 or compatible).
         """
-        pass
+
+        self._touch = touch_device
+
+        self._pressed = False
+        self._last_x = 0
+        self._last_y = 0
 
     # ------------------------------------------------------------------
-    # Dispatch
+    # Input polling
     # ------------------------------------------------------------------
 
-    def dispatch(self, event: Event) -> None:
-        """Deliver *event* to registered listeners and the active screen.
-
-        TODO: call each listener registered for event.event_type
-        TODO: if active screen is set, call screen.dispatch_touch(event)
+    def poll(self):
         """
-        pass
+        Poll touch hardware and return a TouchEvent or None.
 
-    # ------------------------------------------------------------------
-    # Active screen
-    # ------------------------------------------------------------------
-
-    def set_active_screen(self, screen) -> None:
-        """Update the screen that receives touch events.
-
-        TODO: store screen reference
+        Returns:
+            TouchEvent or None
         """
-        pass
+
+        if self._touch is None:
+            return None
+
+        result = self._touch.get_touch()
+
+        if result is not None:
+
+            x, y = result
+
+            self._last_x = x
+            self._last_y = y
+
+            if not self._pressed:
+
+                self._pressed = True
+
+                return TouchEvent(
+                    x=x,
+                    y=y,
+                    event_type=TouchEvent.DOWN
+                )
+
+            return TouchEvent(
+                x=x,
+                y=y,
+                event_type=TouchEvent.MOVE
+            )
+
+        if self._pressed:
+
+            self._pressed = False
+
+            return TouchEvent(
+                x=self._last_x,
+                y=self._last_y,
+                event_type=TouchEvent.UP
+            )
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Reset state
+    # ------------------------------------------------------------------
+
+    def reset(self) -> None:
+        """Reset internal state."""
+
+        self._pressed = False
+        self._last_x = 0
+        self._last_y = 0
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"EventDispatcher("
+            f"pressed={self._pressed}, "
+            f"last_x={self._last_x}, "
+            f"last_y={self._last_y})"
+        )

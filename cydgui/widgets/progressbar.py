@@ -2,97 +2,160 @@
 cydgui.widgets.progressbar
 ==========================
 
-Horizontal or vertical progress indicator widget.
+A simple progress bar widget for the CYD GUI framework.
 
-A ``ProgressBar`` shows a numeric value as a filled bar within a fixed range
-(default 0–100).  It is suitable for battery level, download progress, sensor
-readings, and similar use-cases.
+The ProgressBar visually represents a numeric value within a range,
+rendered as a filled horizontal bar.
 
-Design notes
-------------
-- The value is clamped to [min_value, max_value] internally.
-- Calling ``set_value(v)`` triggers ``invalidate()`` only if the value
-  actually changed (to reduce unnecessary redraws on high-frequency sensors).
-- Orientation is either ``"horizontal"`` (default) or ``"vertical"``.
+Design principles:
+- Inherits from Widget base class
+- No global state
+- Renderer-agnostic drawing
+- Supports synchronous and async updates
 """
 
 from cydgui.core.widget import Widget
-
+import uasyncio as asyncio
 
 class ProgressBar(Widget):
-    """Displays a value as a filled bar.
-
-    Parameters
-    ----------
-    x, y:
-        Top-left corner.
-    width, height:
-        Dimensions in pixels.
-    value:
-        Initial value (must be between *min_value* and *max_value*).
-    min_value:
-        Minimum of the value range (default 0).
-    max_value:
-        Maximum of the value range (default 100).
-    orientation:
-        ``"horizontal"`` or ``"vertical"``.
-    color:
-        Fill colour (RGB565).  Defaults to theme primary.
-    bg:
-        Background colour (RGB565).  Defaults to theme background.
-    border_color:
-        Outline colour (RGB565).  Defaults to theme border.
-    """
+    """A horizontal progress bar widget."""
 
     def __init__(
         self,
         x: int = 0,
         y: int = 0,
         width: int = 100,
-        height: int = 16,
-        value: float = 0,
-        min_value: float = 0,
-        max_value: float = 100,
-        orientation: str = "horizontal",
-        color: int = None,
-        bg: int = None,
-        border_color: int = None,
+        height: int = 12,
+        min_value: int = 0,
+        max_value: int = 100,
+        value: int = 0,
+        bar_color: int = 0x07E0,        # green (RGB565 default)
+        bg_color: int = 0x0000,         # black
+        border_color: int = 0xFFFF,     # white
+        show_border: bool = True,
     ) -> None:
+        """
+        Initialize the progress bar widget.
+
+        Args:
+            x: X position relative to parent.
+            y: Y position relative to parent.
+            width: Total width of the progress bar.
+            height: Height of the progress bar.
+            min_value: Minimum value of the range.
+            max_value: Maximum value of the range.
+            value: Initial progress value.
+            bar_color: Color of the filled portion (RGB565).
+            bg_color: Background color (RGB565).
+            border_color: Border color (RGB565).
+            show_border: Whether to render a border around the bar.
+        """
         super().__init__(x=x, y=y, width=width, height=height)
-        # TODO: store value, min_value, max_value, orientation,
-        #       color, bg, border_color
-        pass
 
-    # ------------------------------------------------------------------
-    # Value management
-    # ------------------------------------------------------------------
+        self._min = min_value
+        self._max = max_value
+        self._value = value
 
-    def set_value(self, value: float) -> None:
-        """Update the progress value and request a redraw if changed.
+        self._bar_color = bar_color
+        self._bg_color = bg_color
+        self._border_color = border_color
+        self._show_border = show_border
 
-        TODO: clamp value to [min_value, max_value]
-        TODO: if value changed, store and call invalidate()
+    # ------------------------------------------------------------
+    # Value handling
+    # ------------------------------------------------------------
+
+    @property
+    def value(self) -> int:
+        """Return current progress value."""
+        return self._value
+
+    def set_value(self, value: int) -> None:
         """
-        pass
+        Set progress value and mark widget for redraw.
 
-    def get_value(self) -> float:
-        """Return the current progress value.
-
-        TODO: return self._value
+        Args:
+            value: New progress value.
         """
-        return 0.0
+        self._value = self._clamp(value)
+        self.invalidate()
 
-    # ------------------------------------------------------------------
+    def increment(self, step: int = 1) -> None:
+        """
+        Increment progress value.
+
+        Args:
+            step: Amount to increase.
+        """
+        self.set_value(self._value + step)
+
+    def _clamp(self, value: int) -> int:
+        """Clamp value inside allowed range."""
+        if value < self._min:
+            return self._min
+        if value > self._max:
+            return self._max
+        return value
+
+    def _ratio(self) -> float:
+        """Return normalized progress ratio (0.0 - 1.0)."""
+        if self._max == self._min:
+            return 0.0
+        return (self._value - self._min) / (self._max - self._min)
+
+    # ------------------------------------------------------------
     # Drawing
-    # ------------------------------------------------------------------
+    # ------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw the progress bar via *renderer*.
-
-        TODO: draw background rect
-        TODO: compute filled length as ratio of value range
-        TODO: draw filled rect for the progress portion
-        TODO: draw border rect
-        TODO: clear self._dirty
         """
-        pass
+        Draw the progress bar using the provided renderer.
+
+        Args:
+            renderer: Renderer instance responsible for drawing primitives.
+        """
+        if not self.visible:
+            return
+
+        x = self.absolute_x
+        y = self.absolute_y
+        w = self.width
+        h = self.height
+
+        # Background
+        renderer.fill_rect(x, y, w, h, self._bg_color)
+
+        # Filled bar
+        fill_w = int(w * self._ratio())
+        if fill_w > 0:
+            renderer.fill_rect(x, y, fill_w, h, self._bar_color)
+
+        # Border
+        if self._show_border:
+            renderer.draw_rect(x, y, w, h, self._border_color)
+
+        self.validate()
+
+    # ------------------------------------------------------------
+    # Async helpers (optional convenience)
+    # ------------------------------------------------------------
+
+    async def animate_to(self, target: int, step: int = 1, delay_ms: int = 10) -> None:
+        """
+        Smoothly animate progress toward a target value.
+
+        Args:
+            target: Final value to reach.
+            step: Increment step per iteration.
+            delay_ms: Delay between steps in milliseconds.
+        """
+
+
+        if target > self._value:
+            while self._value < target:
+                self.increment(step)
+                await asyncio.sleep_ms(delay_ms)
+        else:
+            while self._value > target:
+                self.increment(-step)
+                await asyncio.sleep_ms(delay_ms)
