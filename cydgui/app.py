@@ -2,94 +2,225 @@
 cydgui.app
 ==========
 
-Core application object.  ``App`` is the single entry point for every
-cydgui-based program.  It owns the renderer, the theme, the event dispatcher,
-and the navigation stack.
+Core application object.
 
-Responsibilities
-----------------
-- Bootstrap the framework.
-- Hold references to all top-level collaborators.
-- Drive the main ``uasyncio`` event loop.
-- Delegate screen transitions to :class:`~cydgui.core.navigation.Navigation`.
-- Delegate input events to :class:`~cydgui.core.events.EventDispatcher`.
+The App is responsible for:
 
-Design notes
-------------
-- No global state: every dependency is injected via the constructor.
-- Compatible with MicroPython's ``uasyncio`` (``import uasyncio as asyncio``).
-- Widgets *never* receive a reference to the renderer directly; they call
-  ``invalidate()`` and the App/Renderer pipeline does the actual drawing.
+- Holding the active screen.
+- Polling the touch driver.
+- Generating TouchEvent instances.
+- Rendering dirty screens.
+- Running the async event loop.
+
+This implementation is intentionally lightweight and suitable
+for MicroPython devices such as the Cheap Yellow Display (CYD).
 """
 
-# MicroPython ships ``uasyncio``; CPython ships ``asyncio``.
-# The try/except lets the module be imported on both platforms.
 try:
     import uasyncio as asyncio
 except ImportError:
-    import asyncio  # type: ignore
+    import asyncio
 
-from cydgui.core.events import EventDispatcher
-from cydgui.core.navigation import Navigation
-from cydgui.core.theme import Theme
-from cydgui.render.renderer import Renderer
+
+from cydgui.core.touch_event import TouchEvent
 
 
 class App:
-    """Root application object.
+    """Main application object."""
 
-    Parameters
-    ----------
-    renderer:
-        A concrete :class:`~cydgui.render.renderer.Renderer` implementation.
-    theme:
-        The active :class:`~cydgui.core.theme.Theme`.  When *None* a default
-        theme is created automatically.
-    """
+    def __init__(
+        self,
+        renderer,
+        screen,
+        touch=None,
+        frame_delay_ms: int = 16
+    ) -> None:
+        """
+        Initialize application.
 
-    def __init__(self, renderer: Renderer, theme: Theme = None) -> None:
-        # TODO: store renderer and theme references
-        # TODO: create EventDispatcher instance
-        # TODO: create Navigation instance
-        # TODO: initialise dirty / redraw flag
-        pass
+        Args:
+            renderer: Renderer instance.
+            touch: Optional touch driver.
+            frame_delay_ms: Frame delay in milliseconds.
+        """
+
+        self._renderer = renderer
+        self._touch = touch
+
+        
+
+        self._frame_delay_ms = frame_delay_ms
+
+        self._screen = None
+
+        self._running = False
+
+        self._pressed = False
+
+        self._last_x = 0
+        self._last_y = 0
+        
+        self.set_screen(screen=screen)
 
     # ------------------------------------------------------------------
-    # Screen management (delegated to Navigation)
+    # Screen management
     # ------------------------------------------------------------------
 
-    def push(self, screen) -> None:
-        """Push *screen* onto the navigation stack and make it active.
+    @property
+    def screen(self):
+        """Return active screen."""
 
-        TODO: delegate to self._navigation.push(screen)
-        TODO: mark display as dirty
+        return self._screen
+
+    def set_screen(
+        self,
+        screen
+    ) -> None:
         """
-        pass
+        Set active screen.
 
-    def pop(self) -> None:
-        """Pop the current screen from the navigation stack.
-
-        TODO: delegate to self._navigation.pop()
-        TODO: mark display as dirty
+        Args:
+            screen: Screen instance.
         """
-        pass
+
+        if self._screen is screen:
+            return
+
+        if self._screen:
+            self._screen.on_leave()
+
+        self._screen = screen
+
+        if self._screen:
+            self._screen.on_enter()
+
+    # ------------------------------------------------------------------
+    # Touch processing
+    # ------------------------------------------------------------------
+
+    def _poll_touch(self):
+        """
+        Poll touch driver and generate TouchEvent.
+
+        Returns:
+            TouchEvent or None.
+        """
+
+        if self._touch is None:
+            return None
+
+        touch = self._touch.get_touch()
+
+        if touch is not None:
+
+            x, y = touch
+
+            self._last_x = x
+            self._last_y = y
+
+            if not self._pressed:
+
+                self._pressed = True
+
+                return TouchEvent(
+                    x=x,
+                    y=y,
+                    event_type=TouchEvent.DOWN
+                )
+
+            return TouchEvent(
+                x=x,
+                y=y,
+                event_type=TouchEvent.MOVE
+            )
+
+        if self._pressed:
+
+            self._pressed = False
+
+            return TouchEvent(
+                x=self._last_x,
+                y=self._last_y,
+                event_type=TouchEvent.UP
+            )
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Rendering
+    # ------------------------------------------------------------------
+
+    def _render(self) -> None:
+        """Render active screen."""
+
+        if self._screen is None:
+            return
+
+        if not self._screen.dirty:
+            return
+
+        self._screen.draw(
+            self._renderer
+        )
+
+        self._renderer.flush()
 
     # ------------------------------------------------------------------
     # Main loop
     # ------------------------------------------------------------------
 
     async def _run_async(self) -> None:
-        """Async main loop.
+        """Async application loop."""
 
-        TODO: poll touch / input driver via EventDispatcher
-        TODO: call renderer when display is dirty
-        TODO: yield control with ``await asyncio.sleep_ms(0)`` between frames
-        """
-        pass
+        self._running = True
+
+        while self._running:
+
+            event = self._poll_touch()
+
+            if (
+                event is not None and
+                self._screen is not None
+            ):
+                self._screen.dispatch_touch(
+                    event
+                )
+
+            self._render()
+
+            try:
+                await asyncio.sleep_ms(
+                    self._frame_delay_ms
+                )
+            except AttributeError:
+                await asyncio.sleep(
+                    self._frame_delay_ms / 1000
+                )
+
+    # ------------------------------------------------------------------
+    # Control
+    # ------------------------------------------------------------------
+
+    def stop(self) -> None:
+        """Stop application loop."""
+
+        self._running = False
 
     def run(self) -> None:
-        """Start the application.  Blocks until the application exits.
+        """Run application."""
 
-        TODO: call asyncio.run(self._run_async())
-        """
-        pass
+        asyncio.run(
+            self._run_async()
+        )
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"App("
+            f"screen={self._screen}, "
+            f"running={self._running})"
+        )

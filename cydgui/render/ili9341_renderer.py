@@ -2,88 +2,95 @@
 cydgui.render.ili9341_renderer
 ==============================
 
-Concrete :class:`~cydgui.render.renderer.Renderer` for the ILI9341 TFT
-display controller (240 × 320, 16-bit RGB565).
+ILI9341 renderer implementation.
 
-This renderer is the default target for the Cheap Yellow Display
-(ESP32 + ILI9341 + XPT2046).  It wraps a driver object passed in at
-construction time so the framework itself does not depend on any specific
-ILI9341 driver library.
-
-Expected driver interface
--------------------------
-The *driver* object must expose at minimum::
-
-    driver.fill(color)
-    driver.pixel(x, y, color)
-    driver.line(x0, y0, x1, y1, color)
-    driver.rect(x, y, w, h, color)
-    driver.fill_rect(x, y, w, h, color)
-    driver.text(text, x, y, color)
-
-Adjust the implementation as needed for the driver you are using
-(e.g. ``st7789``, ``ili9341`` from the micropython-ili9341 project, etc.).
-
-Notes
------
-- This module should be imported only on hardware that has the ILI9341 driver
-  available.  Desktop / CI environments can mock the driver.
-- All coordinates are clipped to the display bounds before sending to the
-  driver.
+This renderer adapts the rdagger/micropython-ili9341 driver to the
+generic cydgui Renderer API.
 """
 
 from cydgui.render.renderer import Renderer
-from cydgui.core.theme import Theme
-from cydgui.utils.geometry import Rect
 
 
-# Default display resolution for the CYD
 _DEFAULT_WIDTH = 240
 _DEFAULT_HEIGHT = 320
 
 
 class ILI9341Renderer(Renderer):
-    """Renderer implementation for the ILI9341 display controller.
-
-    Parameters
-    ----------
-    driver:
-        An initialised ILI9341 driver instance.
-    width:
-        Display width in pixels (default 240).
-    height:
-        Display height in pixels (default 320).
-    theme:
-        Active :class:`~cydgui.core.theme.Theme`.
-    """
+    """ILI9341 renderer implementation."""
 
     def __init__(
         self,
         driver,
-        width: int = _DEFAULT_WIDTH,
-        height: int = _DEFAULT_HEIGHT,
-        theme: Theme = None,
+        width=_DEFAULT_WIDTH,
+        height=_DEFAULT_HEIGHT,
+        theme=None
     ) -> None:
-        super().__init__(width=width, height=height, theme=theme)
-        # TODO: store driver reference
-        # TODO: optionally initialise a frame buffer for double-buffering
-        pass
+
+        super().__init__(
+            width=width,
+            height=height,
+            theme=theme
+        )
+
+        self._driver = driver
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _inside_display(
+        self,
+        x: int,
+        y: int
+    ) -> bool:
+
+        return (
+            0 <= x < self.width and
+            0 <= y < self.height
+        )
+
+    def _inside_clip(
+        self,
+        x: int,
+        y: int
+    ) -> bool:
+
+        if self.clip_rect is None:
+            return True
+
+        return self.clip_rect.contains(
+            x,
+            y
+        )
+
+    def _can_draw(
+        self,
+        x: int,
+        y: int
+    ) -> bool:
+
+        return (
+            self._inside_display(x, y) and
+            self._inside_clip(x, y)
+        )
 
     # ------------------------------------------------------------------
     # Display control
     # ------------------------------------------------------------------
 
-    def clear(self, color: int = 0x0000) -> None:
-        """Fill the entire display with *color*.
+    def clear(
+        self,
+        color: int = 0x0000
+    ) -> None:
 
-        TODO: call self._driver.fill(color) or equivalent
-        """
-        pass
+        self._driver.clear(color)
 
     def flush(self) -> None:
-        """Flush frame buffer to display (no-op if single-buffered).
+        """
+        No-op.
 
-        TODO: implement if double-buffering is used
+        The referenced ILI9341 driver writes directly
+        to the display.
         """
         pass
 
@@ -91,41 +98,162 @@ class ILI9341Renderer(Renderer):
     # Primitive drawing
     # ------------------------------------------------------------------
 
-    def draw_pixel(self, x: int, y: int, color: int) -> None:
-        """TODO: call self._driver.pixel(x, y, color)"""
-        pass
+    def draw_pixel(
+        self,
+        x: int,
+        y: int,
+        color: int
+    ) -> None:
 
-    def draw_line(self, x0: int, y0: int, x1: int, y1: int, color: int) -> None:
-        """TODO: call self._driver.line(x0, y0, x1, y1, color)"""
-        pass
+        if not self._can_draw(x, y):
+            return
 
-    def draw_rect(self, x: int, y: int, w: int, h: int, color: int) -> None:
-        """TODO: call self._driver.rect(x, y, w, h, color)"""
-        pass
+        self._driver.draw_pixel(
+            x,
+            y,
+            color
+        )
 
-    def fill_rect(self, x: int, y: int, w: int, h: int, color: int) -> None:
-        """TODO: call self._driver.fill_rect(x, y, w, h, color)"""
-        pass
+    def draw_line(
+        self,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+        color: int
+    ) -> None:
 
-    def draw_circle(self, x: int, y: int, r: int, color: int) -> None:
-        """TODO: implement Bresenham circle algorithm or use driver helper"""
-        pass
+        self._driver.draw_line(
+            x0,
+            y0,
+            x1,
+            y1,
+            color
+        )
 
-    def fill_circle(self, x: int, y: int, r: int, color: int) -> None:
-        """TODO: implement filled circle via horizontal spans"""
-        pass
+    def draw_rect(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        color: int
+    ) -> None:
+
+        self._driver.draw_rectangle(
+            x,
+            y,
+            w,
+            h,
+            color
+        )
+
+    def fill_rect(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        color: int
+    ) -> None:
+
+        self._driver.fill_vrect(
+            x,
+            y,
+            w,
+            h,
+            color
+        )
+
+    def draw_circle(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        color: int
+    ) -> None:
+
+        self._driver.draw_circle(
+            x,
+            y,
+            radius,
+            color
+        )
+
+    def fill_circle(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        color: int
+    ) -> None:
+
+        self._driver.fill_circle(
+            x,
+            y,
+            radius,
+            color
+        )
 
     def draw_round_rect(
-        self, x: int, y: int, w: int, h: int, r: int, color: int
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        radius: int,
+        color: int
     ) -> None:
-        """TODO: implement rounded-rectangle using arc + line primitives"""
-        pass
+
+        self.draw_line(
+            x + radius,
+            y,
+            x + w - radius,
+            y,
+            color
+        )
+
+        self.draw_line(
+            x + radius,
+            y + h,
+            x + w - radius,
+            y + h,
+            color
+        )
+
+        self.draw_line(
+            x,
+            y + radius,
+            x,
+            y + h - radius,
+            color
+        )
+
+        self.draw_line(
+            x + w,
+            y + radius,
+            x + w,
+            y + h - radius,
+            color
+        )
 
     def fill_round_rect(
-        self, x: int, y: int, w: int, h: int, r: int, color: int
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        radius: int,
+        color: int
     ) -> None:
-        """TODO: implement filled rounded-rectangle"""
-        pass
+
+        self.fill_rect(
+            x + radius,
+            y,
+            w - (radius * 2),
+            h,
+            color
+        )
 
     # ------------------------------------------------------------------
     # Text
@@ -138,17 +266,65 @@ class ILI9341Renderer(Renderer):
         text: str,
         color: int,
         font=None,
-        bg: int = None,
+        bg: int = None
     ) -> None:
-        """TODO: call self._driver.text(text, x, y, color) or font renderer"""
-        pass
 
-    def text_size(self, text: str, font=None) -> tuple:
-        """TODO: compute text bounding box using font metrics"""
-        return (0, 0)
+        if font is None:
+
+            self._driver.draw_text8x8(
+                x,
+                y,
+                text,
+                color,
+                bg or 0
+            )
+
+            return
+
+        self._driver.draw_text(
+            x,
+            y,
+            text,
+            font,
+            color,
+            bg or 0
+        )
+
+    def text_size(
+        self,
+        text: str,
+        font=None
+    ) -> tuple:
+
+        if font is None:
+            return (
+                len(text) * 8,
+                8
+            )
+
+        width = 0
+        height = 0
+
+        for char in text:
+
+            _, w, h = font.get_letter(
+                char,
+                0xFFFF,
+                0x0000
+            )
+
+            width += w + 1
+
+            if h > height:
+                height = h
+
+        return (
+            width,
+            height
+        )
 
     # ------------------------------------------------------------------
-    # Image / bitmap
+    # Images
     # ------------------------------------------------------------------
 
     def draw_bitmap(
@@ -159,19 +335,28 @@ class ILI9341Renderer(Renderer):
         w: int,
         h: int,
         color: int = None,
-        bg: int = None,
+        bg: int = None
     ) -> None:
-        """TODO: blit *bitmap* data to the display at (x, y)"""
-        pass
+
+        self._driver.draw_sprite(
+            bitmap,
+            x,
+            y,
+            w,
+            h
+        )
 
     # ------------------------------------------------------------------
     # Clipping
     # ------------------------------------------------------------------
 
-    def set_clip(self, rect: Rect) -> None:
-        """TODO: store clip rect; apply to all subsequent draw calls"""
-        pass
+    def set_clip(
+        self,
+        rect
+    ) -> None:
+
+        super().set_clip(rect)
 
     def clear_clip(self) -> None:
-        """TODO: clear stored clip rect"""
-        pass
+
+        super().clear_clip()

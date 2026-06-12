@@ -6,38 +6,28 @@ Base class for every visual element in the cydgui framework.
 
 Design contract
 ---------------
-- A ``Widget`` knows its own geometry (x, y, width, height).
-- A ``Widget`` *never* holds a reference to the renderer or the display
-  driver; it only calls ``invalidate()`` to request a redraw.
-- Drawing is the exclusive responsibility of the
-  :class:`~cydgui.render.renderer.Renderer`.
-- Every widget exposes ``draw(renderer)`` so the renderer can call back into
-  the widget to obtain draw commands.
-- Input events reach the widget via the
-  :class:`~cydgui.core.events.EventDispatcher`.
+- A Widget knows its own geometry.
+- A Widget never talks directly to the display driver.
+- A Widget never talks directly to the touch driver.
+- Rendering is delegated to a Renderer instance.
+- Widgets can request redraws through invalidate().
+- Widgets can belong to a parent Container.
+- Coordinates are relative to the parent widget.
 
 Lifecycle
 ---------
-1. Widget is instantiated and added to a Container or Screen.
-2. When visible state changes, ``invalidate()`` is called.
-3. The App/Renderer pipeline eventually calls ``draw(renderer)``.
+1. Widget is instantiated.
+2. Widget is attached to a parent Container.
+3. Widget requests redraws via invalidate().
+4. App rendering pipeline calls draw(renderer).
+5. Touch events are dispatched through on_touch().
 """
 
 from cydgui.utils.geometry import Rect
 
 
 class Widget:
-    """Abstract base widget.
-
-    Parameters
-    ----------
-    x, y:
-        Top-left corner of the widget in screen coordinates.
-    width, height:
-        Dimensions in pixels.
-    visible:
-        Initial visibility state.
-    """
+    """Base widget for all visual components."""
 
     def __init__(
         self,
@@ -46,12 +36,22 @@ class Widget:
         width: int = 0,
         height: int = 0,
         visible: bool = True,
+        enabled: bool = True,
     ) -> None:
-        # TODO: store geometry as a Rect
-        # TODO: store visible flag
-        # TODO: store dirty flag (True initially so first draw happens)
-        # TODO: store parent reference (None until added to a container)
-        pass
+
+        self._rect = Rect(
+            x=x,
+            y=y,
+            width=width,
+            height=height
+        )
+
+        self._visible = visible
+        self._enabled = enabled
+
+        self._dirty = True
+
+        self._parent = None
 
     # ------------------------------------------------------------------
     # Geometry
@@ -59,78 +59,185 @@ class Widget:
 
     @property
     def rect(self) -> Rect:
-        """Return the bounding rectangle of this widget.
+        """Return widget bounds."""
+        return self._rect
 
-        TODO: return self._rect
-        """
-        pass
+    @property
+    def x(self) -> int:
+        """Return local X coordinate."""
+        return self._rect.x
+
+    @property
+    def y(self) -> int:
+        """Return local Y coordinate."""
+        return self._rect.y
+
+    @property
+    def width(self) -> int:
+        """Return widget width."""
+        return self._rect.width
+
+    @property
+    def height(self) -> int:
+        """Return widget height."""
+        return self._rect.height
+
+    @property
+    def absolute_x(self) -> int:
+        """Return absolute screen X coordinate."""
+
+        if self._parent:
+            return self._parent.absolute_x + self.x
+
+        return self.x
+
+    @property
+    def absolute_y(self) -> int:
+        """Return absolute screen Y coordinate."""
+
+        if self._parent:
+            return self._parent.absolute_y + self.y
+
+        return self.y
+
+    def contains(
+        self,
+        x: int,
+        y: int
+    ) -> bool:
+        """Return True if a point lies inside the widget."""
+
+        ax = self.absolute_x
+        ay = self.absolute_y
+
+        return (
+            ax <= x < (ax + self.width) and
+            ay <= y < (ay + self.height)
+        )
 
     # ------------------------------------------------------------------
-    # Visibility & dirty tracking
+    # State
     # ------------------------------------------------------------------
+
+    @property
+    def visible(self) -> bool:
+        """Return widget visibility."""
+        return self._visible
+
+    @visible.setter
+    def visible(
+        self,
+        value: bool
+    ) -> None:
+
+        if self._visible != value:
+            self._visible = value
+            self.invalidate()
+
+    @property
+    def enabled(self) -> bool:
+        """Return enabled state."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(
+        self,
+        value: bool
+    ) -> None:
+
+        if self._enabled != value:
+            self._enabled = value
+            self.invalidate()
+
+    # ------------------------------------------------------------------
+    # Dirty tracking
+    # ------------------------------------------------------------------
+
+    @property
+    def dirty(self) -> bool:
+        """Return dirty state."""
+        return self._dirty
 
     def invalidate(self) -> None:
-        """Mark this widget as needing a redraw.
+        """Mark widget as requiring redraw."""
 
-        TODO: set self._dirty = True
-        TODO: propagate invalidation up to parent if available
-        """
-        pass
+        self._dirty = True
 
-    def is_dirty(self) -> bool:
-        """Return True if this widget needs to be redrawn.
+        if self._parent:
+            self._parent.invalidate()
 
-        TODO: return self._dirty
-        """
-        pass
+    def validate(self) -> None:
+        """Mark widget as rendered."""
+
+        self._dirty = False
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw this widget using *renderer*.
-
-        This method is called by the rendering pipeline; subclasses must
-        override it.
-
-        TODO: implement in subclasses
-        TODO: clear self._dirty after drawing
         """
-        pass
+        Draw widget contents.
+
+        Subclasses should override this method.
+        """
+
+        self.validate()
 
     # ------------------------------------------------------------------
-    # Input events
+    # Input
     # ------------------------------------------------------------------
 
     def on_touch(self, event) -> bool:
-        """Handle a touch event.  Return True if the event was consumed.
-
-        TODO: implement in subclasses that are interactive
         """
-        return False
+        Handle a touch event.
 
-    def on_touch_release(self, event) -> bool:
-        """Handle a touch-release event.  Return True if consumed.
+        The event may represent:
+        - TouchEvent.DOWN
+        - TouchEvent.MOVE
+        - TouchEvent.UP
 
-        TODO: implement in subclasses
+        Args:
+            event: TouchEvent instance.
+
+        Returns:
+            True if the event was consumed.
         """
+
         return False
 
     # ------------------------------------------------------------------
-    # Lifecycle
+    # Parent management
     # ------------------------------------------------------------------
 
-    def on_attach(self, parent) -> None:
-        """Called when this widget is added to a parent container.
+    @property
+    def parent(self):
+        """Return parent widget."""
+        return self._parent
 
-        TODO: store parent reference
-        """
-        pass
+    def on_attach(
+        self,
+        parent
+    ) -> None:
+        """Attach widget to a parent container."""
+
+        self._parent = parent
 
     def on_detach(self) -> None:
-        """Called when this widget is removed from its parent.
+        """Detach widget from its parent."""
 
-        TODO: clear parent reference
-        """
-        pass
+        self._parent = None
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"{self.__class__.__name__}("
+            f"x={self.x}, "
+            f"y={self.y}, "
+            f"width={self.width}, "
+            f"height={self.height})"
+        )

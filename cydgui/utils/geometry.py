@@ -30,16 +30,21 @@ class Point:
     """
 
     def __init__(self, x: int = 0, y: int = 0) -> None:
-        # TODO: store x, y
-        pass
+        self.x = x
+        self.y = y
 
     def __repr__(self) -> str:
-        # TODO: return f"Point({self.x}, {self.y})"
-        return "Point()"
+        return f"Point({self.x}, {self.y})"
 
     def __eq__(self, other) -> bool:
-        # TODO: compare x and y
-        return False
+
+        if not isinstance(other, Point):
+            return False
+
+        return (
+            self.x == other.x and
+            self.y == other.y
+        )
 
 
 class Size:
@@ -51,13 +56,27 @@ class Size:
         Horizontal and vertical extents.
     """
 
-    def __init__(self, width: int = 0, height: int = 0) -> None:
-        # TODO: store width, height
-        pass
+    def __init__(
+        self,
+        width: int = 0,
+        height: int = 0
+    ) -> None:
+
+        self.width = width
+        self.height = height
 
     def __repr__(self) -> str:
-        # TODO: return f"Size({self.width}, {self.height})"
-        return "Size()"
+        return f"Size({self.width}, {self.height})"
+
+    def __eq__(self, other) -> bool:
+
+        if not isinstance(other, Size):
+            return False
+
+        return (
+            self.width == other.width and
+            self.height == other.height
+        )
 
 
 class Rect:
@@ -72,10 +91,17 @@ class Rect:
     """
 
     def __init__(
-        self, x: int = 0, y: int = 0, width: int = 0, height: int = 0
+        self,
+        x: int = 0,
+        y: int = 0,
+        width: int = 0,
+        height: int = 0
     ) -> None:
-        # TODO: store x, y, width, height
-        pass
+
+        self._x = x
+        self._y = y
+        self._width = width
+        self._height = height
 
     # ------------------------------------------------------------------
     # Computed properties
@@ -83,86 +109,118 @@ class Rect:
 
     @property
     def x(self) -> int:
-        """TODO: return self._x"""
-        return 0
+        return self._x
 
     @property
     def y(self) -> int:
-        """TODO: return self._y"""
-        return 0
+        return self._y
 
     @property
     def width(self) -> int:
-        """TODO: return self._width"""
-        return 0
+        return self._width
 
     @property
     def height(self) -> int:
-        """TODO: return self._height"""
-        return 0
+        return self._height
 
     @property
     def right(self) -> int:
-        """Return x + width (exclusive right edge).
-
-        TODO: return self._x + self._width
-        """
-        return 0
+        """Return x + width (exclusive right edge)."""
+        return self._x + self._width
 
     @property
     def bottom(self) -> int:
-        """Return y + height (exclusive bottom edge).
-
-        TODO: return self._y + self._height
-        """
-        return 0
+        """Return y + height (exclusive bottom edge)."""
+        return self._y + self._height
 
     @property
     def cx(self) -> int:
-        """Return the horizontal centre x-coordinate.
-
-        TODO: return self._x + self._width // 2
-        """
-        return 0
+        """Return the horizontal centre x-coordinate."""
+        return self._x + (self._width // 2)
 
     @property
     def cy(self) -> int:
-        """Return the vertical centre y-coordinate.
-
-        TODO: return self._y + self._height // 2
-        """
-        return 0
+        """Return the vertical centre y-coordinate."""
+        return self._y + (self._height // 2)
 
     # ------------------------------------------------------------------
     # Geometric operations
     # ------------------------------------------------------------------
 
     def contains(self, x: int, y: int) -> bool:
-        """Return True if the point (x, y) is inside this rectangle.
+        """Return True if the point (x, y) is inside this rectangle."""
 
-        TODO: return x >= self.x and x < self.right
-                  and y >= self.y and y < self.bottom
-        """
-        return False
+        return (
+            self.x <= x < self.right and
+            self.y <= y < self.bottom
+        )
 
     def intersects(self, other: "Rect") -> bool:
-        """Return True if this rectangle overlaps with *other*.
+        """Return True if this rectangle overlaps with *other*."""
 
-        TODO: implement axis-aligned intersection test
-        """
-        return False
+        return not (
+            self.right <= other.x or
+            other.right <= self.x or
+            self.bottom <= other.y or
+            other.bottom <= self.y
+        )
 
     def union(self, other: "Rect") -> "Rect":
-        """Return the smallest Rect that contains both self and *other*.
+        """Return the smallest Rect that contains both self and *other*."""
 
-        TODO: compute min/max of corners and return new Rect
-        """
-        return Rect()
+        left = min(self.x, other.x)
+        top = min(self.y, other.y)
+
+        right = max(self.right, other.right)
+        bottom = max(self.bottom, other.bottom)
+
+        return Rect(
+            x=left,
+            y=top,
+            width=right - left,
+            height=bottom - top
+        )
+
+    def move_to(self, x: int, y: int) -> None:
+        """Move rectangle to an absolute position."""
+
+        self._x = x
+        self._y = y
+
+    def resize(self, width: int, height: int) -> None:
+        """Resize rectangle."""
+
+        self._width = width
+        self._height = height
+
+    def copy(self) -> "Rect":
+        """Return a copy of this rectangle."""
+
+        return Rect(
+            self.x,
+            self.y,
+            self.width,
+            self.height
+        )
 
     def __repr__(self) -> str:
-        # TODO: return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
-        return "Rect()"
+
+        return (
+            f"Rect("
+            f"{self.x}, "
+            f"{self.y}, "
+            f"{self.width}, "
+            f"{self.height})"
+        )
 
     def __eq__(self, other) -> bool:
-        # TODO: compare all four components
-        return False
+
+        if not isinstance(other, Rect):
+            return False
+
+        return (
+            self.x == other.x and
+            self.y == other.y and
+            self.width == other.width and
+            self.height == other.height
+        )

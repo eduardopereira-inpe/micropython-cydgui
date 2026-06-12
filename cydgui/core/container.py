@@ -2,36 +2,28 @@
 cydgui.core.container
 =====================
 
-A ``Container`` is a widget that can hold child widgets and delegates draw /
-event calls to them.
+A Container is a widget capable of owning child widgets.
 
 Responsibilities
 ----------------
-- Manage an ordered list of child widgets.
-- Forward ``draw(renderer)`` to each visible child.
-- Forward touch events to children (hit-test, then dispatch).
-- Propagate ``invalidate()`` calls up to the parent chain.
+- Store child widgets.
+- Draw child widgets.
+- Dispatch input events to child widgets.
+- Propagate invalidation requests.
 
 Design notes
 ------------
-- Layouts (Row, Column, Grid) extend Container by adding automatic positioning
-  logic.
-- Container itself does *no* automatic positioning; children are placed at
-  whatever coordinates they were given.
-- Children are drawn in insertion order (painter's algorithm).
+- Container performs no automatic layout.
+- Child coordinates are relative to the container.
+- Children are drawn in insertion order.
+- Events are dispatched in reverse order (top-most widget first).
 """
 
 from cydgui.core.widget import Widget
 
 
 class Container(Widget):
-    """A widget that owns and manages a collection of child widgets.
-
-    Parameters
-    ----------
-    x, y, width, height:
-        Geometry of the container itself.
-    """
+    """Base container widget."""
 
     def __init__(
         self,
@@ -39,81 +31,135 @@ class Container(Widget):
         y: int = 0,
         width: int = 0,
         height: int = 0,
+        visible: bool = True,
+        enabled: bool = True,
     ) -> None:
-        super().__init__(x=x, y=y, width=width, height=height)
-        # TODO: initialise children list: self._children = []
-        pass
+
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            visible=visible,
+            enabled=enabled,
+        )
+
+        self._children = []
 
     # ------------------------------------------------------------------
     # Child management
     # ------------------------------------------------------------------
 
-    def add(self, widget: Widget) -> None:
-        """Append *widget* to the child list.
-
-        TODO: append widget to self._children
-        TODO: call widget.on_attach(self)
-        TODO: call self.invalidate()
+    def add(self, widget: Widget) -> Widget:
         """
-        pass
+        Add a child widget.
+
+        Returns
+        -------
+        Widget
+            The added widget.
+        """
+
+        if widget not in self._children:
+
+            self._children.append(widget)
+
+            widget.on_attach(self)
+
+            self.invalidate()
+
+        return widget
 
     def remove(self, widget: Widget) -> None:
-        """Remove *widget* from the child list.
+        """Remove a child widget."""
 
-        TODO: remove widget from self._children
-        TODO: call widget.on_detach()
-        TODO: call self.invalidate()
-        """
-        pass
+        if widget in self._children:
+
+            self._children.remove(widget)
+
+            widget.on_detach()
+
+            self.invalidate()
 
     def clear(self) -> None:
-        """Remove all children.
+        """Remove all child widgets."""
 
-        TODO: call on_detach() for each child
-        TODO: clear self._children
-        TODO: call self.invalidate()
-        """
-        pass
+        for child in self._children:
+            child.on_detach()
+
+        self._children.clear()
+
+        self.invalidate()
 
     @property
     def children(self):
-        """Return the (read-only) list of child widgets.
+        """Return child widgets as a read-only tuple."""
 
-        TODO: return tuple(self._children) or a read-only view
-        """
-        pass
+        return tuple(self._children)
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw self and all visible children.
+        """Draw visible child widgets."""
 
-        TODO: draw container background / border if needed
-        TODO: iterate over self._children and call child.draw(renderer)
-             for each child that is visible and dirty
-        TODO: clear self._dirty after drawing
-        """
-        pass
+        if not self.visible:
+            return
+
+        for child in self._children:
+
+            if not child.visible:
+                continue
+
+            if child.dirty:
+                child.draw(renderer)
+
+        self.validate()
 
     # ------------------------------------------------------------------
-    # Input events
+    # Input
     # ------------------------------------------------------------------
 
     def on_touch(self, event) -> bool:
-        """Hit-test children in reverse order (top-most first) and dispatch.
-
-        TODO: iterate children in reverse
-        TODO: check if event coordinates are inside child.rect
-        TODO: call child.on_touch(event) and return True if consumed
         """
+        Dispatch touch event.
+
+        Children are checked in reverse order so the most recently
+        added widget receives the event first.
+        """
+
+        if not self.enabled:
+            return False
+
+        x = event.x
+        y = event.y
+
+        for child in reversed(self._children):
+
+            if not child.visible:
+                continue
+
+            if not child.contains(x, y):
+                continue
+
+            if child.on_touch(event):
+                return True
+
         return False
 
     def on_touch_release(self, event) -> bool:
-        """Forward touch-release to the child that captured the touch.
+        """Dispatch touch release."""
 
-        TODO: track which child captured the last touch event
-        TODO: forward release to that child
-        """
+        if not self.enabled:
+            return False
+
+        for child in reversed(self._children):
+
+            if not child.visible:
+                continue
+
+            if child.on_touch_release(event):
+                return True
+
         return False

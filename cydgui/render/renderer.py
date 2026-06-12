@@ -4,130 +4,163 @@ cydgui.render.renderer
 
 Abstract renderer interface.
 
-All display-specific renderers must subclass :class:`Renderer` and implement
-every method.  Widgets receive the renderer as a parameter to their
-``draw(renderer)`` call and must only use the methods declared here, keeping
-widget code display-agnostic.
+All display-specific renderers must subclass Renderer and implement
+the drawing methods defined here.
 
-Coordinate system
------------------
-- Origin (0, 0) is the top-left corner of the display.
-- x increases to the right, y increases downward.
-- All coordinates are in integer pixels.
-
-Colour format
--------------
-- Colours are 16-bit RGB565 integers by default (matches ILI9341 native
-  format).  Concrete renderers may accept other formats as long as they
-  document their convention.
-
-Notes
------
-- MicroPython does not support ``abc.ABCMeta``; the "abstract" nature of this
-  class is enforced by convention: every method raises ``NotImplementedError``.
+Widgets must only use this API, keeping them independent from
+the underlying display driver.
 """
 
-from cydgui.core.theme import Theme
 from cydgui.utils.geometry import Rect
 
 
 class Renderer:
-    """Abstract renderer — defines the drawing API available to widgets.
+    """Abstract renderer.
 
-    Parameters
-    ----------
-    width, height:
-        Display resolution in pixels.
-    theme:
-        The active :class:`~cydgui.core.theme.Theme`; widgets may query the
-        renderer for theme values rather than holding a theme reference
-        themselves.
+    Args:
+        width: Display width in pixels.
+        height: Display height in pixels.
+        theme: Optional theme object.
     """
 
-    def __init__(self, width: int, height: int, theme: Theme = None) -> None:
-        # TODO: store width, height, theme
-        pass
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        theme=None
+    ) -> None:
+
+        self._width = width
+        self._height = height
+
+        self._theme = theme
+
+        self._clip_rect = None
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def width(self) -> int:
+        """Display width."""
+        return self._width
+
+    @property
+    def height(self) -> int:
+        """Display height."""
+        return self._height
+
+    @property
+    def theme(self):
+        """Current theme object."""
+        return self._theme
+
+    @property
+    def clip_rect(self):
+        """Current clipping rectangle."""
+        return self._clip_rect
 
     # ------------------------------------------------------------------
     # Display control
     # ------------------------------------------------------------------
 
     def clear(self, color: int = 0x0000) -> None:
-        """Fill the entire display with *color*.
-
-        TODO: implement in subclass
-        """
+        """Clear entire display."""
         raise NotImplementedError
 
     def flush(self) -> None:
-        """Push the frame buffer to the physical display (if double-buffered).
-
-        TODO: implement in subclass
-        """
+        """Flush pending drawing operations."""
         raise NotImplementedError
 
     # ------------------------------------------------------------------
     # Primitive drawing
     # ------------------------------------------------------------------
 
-    def draw_pixel(self, x: int, y: int, color: int) -> None:
-        """Draw a single pixel.
-
-        TODO: implement in subclass
-        """
+    def draw_pixel(
+        self,
+        x: int,
+        y: int,
+        color: int
+    ) -> None:
+        """Draw a single pixel."""
         raise NotImplementedError
 
-    def draw_line(self, x0: int, y0: int, x1: int, y1: int, color: int) -> None:
-        """Draw a line from (x0, y0) to (x1, y1).
-
-        TODO: implement in subclass
-        """
+    def draw_line(
+        self,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+        color: int
+    ) -> None:
+        """Draw a line."""
         raise NotImplementedError
 
-    def draw_rect(self, x: int, y: int, w: int, h: int, color: int) -> None:
-        """Draw a hollow rectangle.
-
-        TODO: implement in subclass
-        """
+    def draw_rect(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        color: int
+    ) -> None:
+        """Draw rectangle outline."""
         raise NotImplementedError
 
-    def fill_rect(self, x: int, y: int, w: int, h: int, color: int) -> None:
-        """Draw a filled rectangle.
-
-        TODO: implement in subclass
-        """
+    def fill_rect(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        color: int
+    ) -> None:
+        """Draw filled rectangle."""
         raise NotImplementedError
 
-    def draw_circle(self, x: int, y: int, r: int, color: int) -> None:
-        """Draw a hollow circle centred at (x, y) with radius *r*.
-
-        TODO: implement in subclass
-        """
+    def draw_circle(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        color: int
+    ) -> None:
+        """Draw circle outline."""
         raise NotImplementedError
 
-    def fill_circle(self, x: int, y: int, r: int, color: int) -> None:
-        """Draw a filled circle.
-
-        TODO: implement in subclass
-        """
+    def fill_circle(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        color: int
+    ) -> None:
+        """Draw filled circle."""
         raise NotImplementedError
 
     def draw_round_rect(
-        self, x: int, y: int, w: int, h: int, r: int, color: int
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        radius: int,
+        color: int
     ) -> None:
-        """Draw a hollow rectangle with rounded corners of radius *r*.
-
-        TODO: implement in subclass
-        """
+        """Draw rounded rectangle outline."""
         raise NotImplementedError
 
     def fill_round_rect(
-        self, x: int, y: int, w: int, h: int, r: int, color: int
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        radius: int,
+        color: int
     ) -> None:
-        """Draw a filled rectangle with rounded corners.
-
-        TODO: implement in subclass
-        """
+        """Draw filled rounded rectangle."""
         raise NotImplementedError
 
     # ------------------------------------------------------------------
@@ -141,31 +174,21 @@ class Renderer:
         text: str,
         color: int,
         font=None,
-        bg: int = None,
+        bg: int = None
     ) -> None:
-        """Render *text* starting at (x, y).
-
-        Parameters
-        ----------
-        font:
-            A :class:`~cydgui.core.theme.FontRef` or a driver-specific font
-            object.  When None the renderer uses its default font.
-        bg:
-            Optional background colour for the text bounding box.
-
-        TODO: implement in subclass
-        """
+        """Draw text."""
         raise NotImplementedError
 
-    def text_size(self, text: str, font=None) -> tuple:
-        """Return the (width, height) in pixels of *text* rendered with *font*.
-
-        TODO: implement in subclass
-        """
+    def text_size(
+        self,
+        text: str,
+        font=None
+    ) -> tuple:
+        """Return text size."""
         raise NotImplementedError
 
     # ------------------------------------------------------------------
-    # Image / bitmap
+    # Images
     # ------------------------------------------------------------------
 
     def draw_bitmap(
@@ -176,40 +199,59 @@ class Renderer:
         w: int,
         h: int,
         color: int = None,
-        bg: int = None,
+        bg: int = None
     ) -> None:
-        """Draw a 1-bit or raw bitmap at (x, y).
-
-        TODO: implement in subclass
-        """
+        """Draw bitmap."""
         raise NotImplementedError
 
     # ------------------------------------------------------------------
     # Clipping
     # ------------------------------------------------------------------
 
-    def set_clip(self, rect: Rect) -> None:
-        """Restrict all drawing to *rect*.
+    def set_clip(
+        self,
+        rect: Rect
+    ) -> None:
+        """Set clipping rectangle."""
 
-        TODO: implement in subclass if supported by the hardware
-        """
-        raise NotImplementedError
+        self._clip_rect = rect
 
     def clear_clip(self) -> None:
-        """Remove any active clipping rectangle.
+        """Remove clipping rectangle."""
 
-        TODO: implement in subclass
-        """
-        raise NotImplementedError
+        self._clip_rect = None
+
+    def in_clip(
+        self,
+        x: int,
+        y: int
+    ) -> bool:
+        """Check whether a point is inside the clipping region."""
+
+        if self._clip_rect is None:
+            return True
+
+        return self._clip_rect.contains(
+            x,
+            y
+        )
 
     # ------------------------------------------------------------------
-    # Theme access
+    # Helpers
     # ------------------------------------------------------------------
 
-    @property
-    def theme(self) -> Theme:
-        """Return the active theme.
-
-        TODO: return self._theme
-        """
+    def invalidate(self) -> None:
+        """Optional hook for buffered renderers."""
         pass
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+
+        return (
+            f"{self.__class__.__name__}("
+            f"width={self.width}, "
+            f"height={self.height})"
+        )

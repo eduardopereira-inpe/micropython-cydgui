@@ -1,112 +1,117 @@
+
 """
 cydgui.core.screen
 ==================
 
-A ``Screen`` is a full-display view that acts as the root container for all
-widgets shown at a given time.
+A Screen represents a complete application view and acts as the
+root container of a widget hierarchy.
 
 Responsibilities
 ----------------
-- Own the root widget tree for one logical "page" of the UI.
-- Receive lifecycle callbacks from the navigation system (``on_enter``,
-  ``on_leave``).
-- Forward draw calls to its root container.
-- Forward input events to the widget tree via the EventDispatcher.
+- Host top-level widgets.
+- Act as the root of the widget tree.
+- Manage screen lifecycle callbacks.
+- Track invalidation state.
+- Forward rendering to child widgets.
+- Forward touch events to the widget tree.
 
 Notes
 -----
-- Only one Screen is active at a time.
-- The :class:`~cydgui.core.navigation.Navigation` stack decides which screen
-  is current.
-- Screens do *not* access the display directly.
+- A Screen does not know anything about the display hardware.
+- A Screen does not interact directly with the renderer.
+- Navigation decides which Screen is currently active.
 """
 
 from cydgui.core.container import Container
 
 
-class Screen:
-    """A full-screen view that hosts the widget tree.
+class Screen(Container):
+    """Root container representing a full application screen.
 
-    Parameters
-    ----------
-    name:
-        An optional human-readable identifier (useful for debugging).
+    Args:
+        name: Optional screen identifier.
     """
 
     def __init__(self, name: str = "") -> None:
-        # TODO: store name
-        # TODO: create root Container instance
-        # TODO: store dirty flag
-        pass
+        super().__init__(
+            x=0,
+            y=0,
+            width=0,
+            height=0
+        )
+
+        self.name = name
+        self._dirty = True
+
+    @property
+    def dirty(self) -> bool:
+        """Return the current invalidation state."""
+        return self._dirty
 
     # ------------------------------------------------------------------
-    # Widget tree management
-    # ------------------------------------------------------------------
-
-    def add(self, widget) -> None:
-        """Add *widget* to the root container.
-
-        TODO: delegate to self._root.add(widget)
-        TODO: call widget.on_attach(self._root)
-        """
-        pass
-
-    def remove(self, widget) -> None:
-        """Remove *widget* from the root container.
-
-        TODO: delegate to self._root.remove(widget)
-        TODO: call widget.on_detach()
-        """
-        pass
-
-    # ------------------------------------------------------------------
-    # Dirty tracking
+    # Invalidation
     # ------------------------------------------------------------------
 
     def invalidate(self) -> None:
-        """Mark the entire screen as needing a redraw.
-
-        TODO: propagate to root container
-        """
-        pass
+        """Mark the screen as requiring redraw."""
+        self._dirty = True
 
     # ------------------------------------------------------------------
     # Drawing
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw all visible, dirty widgets via *renderer*.
+        """Draw the widget tree.
 
-        TODO: delegate to self._root.draw(renderer)
+        Args:
+            renderer: Active renderer instance.
         """
-        pass
+
+        if not self.visible:
+            return
+
+        super().draw(renderer)
+
+        self._dirty = False
 
     # ------------------------------------------------------------------
     # Input events
     # ------------------------------------------------------------------
 
     def dispatch_touch(self, event) -> bool:
-        """Forward a touch event into the widget tree.
+        """Dispatch a touch event through the widget tree.
 
-        TODO: delegate to self._root.on_touch(event)
+        Args:
+            event: TouchEvent instance.
+
+        Returns:
+            True if the event was handled.
         """
-        return False
+
+        return self.on_touch(event)
 
     # ------------------------------------------------------------------
-    # Lifecycle callbacks (called by Navigation)
+    # Lifecycle
     # ------------------------------------------------------------------
 
     def on_enter(self) -> None:
-        """Called when this screen becomes the active screen.
+        """Called when the screen becomes active."""
 
-        TODO: mark screen as dirty so it is fully redrawn on entry
-        TODO: override in subclasses for custom entry logic
-        """
-        pass
+        self.invalidate()
 
     def on_leave(self) -> None:
-        """Called just before this screen is replaced or popped.
-
-        TODO: override in subclasses for custom leave / cleanup logic
-        """
+        """Called before the screen is deactivated."""
         pass
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+        """Return a debug representation."""
+
+        return (
+            f"Screen("
+            f"name='{self.name}', "
+            f"children={len(self.children)})"
+        )
