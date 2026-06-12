@@ -200,14 +200,17 @@ class TextBox(Widget):
             y +
             ((self.height - text_h) // 2)
         )
-
-        renderer.draw_text(
-            text_x,
-            text_y,
-            display_text,
-            self._color,
-            self._font
-        )
+        
+        try:
+            renderer.draw_text(
+                text_x,
+                text_y,
+                display_text,
+                self._color,
+                self._font
+            )
+        except:
+            pass
 
         #
         # Cursor

@@ -97,6 +97,10 @@ class Gauge(Widget):
 
     def value(self) -> int:
         return self._value
+    
+    async def set_value_async(self, value: int) -> None:
+        """Async version of set_value."""
+        self.set_value(value)
 
     # ------------------------------------------------------------
     # Math helpers
