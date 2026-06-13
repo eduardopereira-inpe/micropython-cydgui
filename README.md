@@ -87,3 +87,7 @@ See [example/sample_app](example/sample_app) for the full working example includ
 
 ![WiFi Setting 2](./images/wifi_setting_2.png)
 
+
+![WiFi Setting 2](./images/home_02.png)
+
+
