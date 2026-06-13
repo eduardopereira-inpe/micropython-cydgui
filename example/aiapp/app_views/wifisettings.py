@@ -176,4 +176,10 @@ class WiFiSettingsView(View):
     def on_home(self, button):
         self.clear()
         gc.collect()
-        self.navigate("home")
+        self.navigate(
+            "home", 
+            parameters={
+                "ssid": self.textbox.text, 
+                "ip": self.textbox2.text
+                }
+        )

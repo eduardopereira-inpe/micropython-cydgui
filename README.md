@@ -77,3 +77,13 @@ class HomeView(View):
 
 See [example/sample_app](example/sample_app) for the full working example including the Settings screen with a virtual keyboard.
 
+## Screen App Sample
+
+![Home Screen](./images/home_01.png)
+
+![WiFi Scan](./images/wifi_scan.png)
+
+![WiFi Setting](./images/wifi_setting.png)
+
+![WiFi Setting 2](./images/wifi_setting_2.png)
+
