@@ -3,7 +3,7 @@ from cydgui.core.view import View
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.canvas import Canvas
-
+import gc
 
 def create_logo():
     # Instância exata solicitada
@@ -279,6 +279,9 @@ class HomeView(View):
         self,
         button
     ):
+        self.clear()
+
+        gc.collect()
         self.navigate(
             "wifi_scan"
         )

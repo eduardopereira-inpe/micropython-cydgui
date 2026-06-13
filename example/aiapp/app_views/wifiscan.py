@@ -7,7 +7,7 @@ from cydgui.widgets.button import Button
 from cydgui.widgets.listview import ListView
 
 from cydgui.utils.constants import Constants
-
+import gc
 
 class WiFiScanView(View):
     """WiFi network selection screen."""
@@ -224,4 +224,6 @@ class WiFiScanView(View):
         self,
         button
     ):
+        self.clear()
+        gc.collect()
         self.navigate("home") 

@@ -171,4 +171,6 @@ class WiFiSettingsView(View):
     # Navigation
     # ========================================================
     def on_home(self, button):
+        self.clear()
+        gc.collect()
         self.navigate("home")

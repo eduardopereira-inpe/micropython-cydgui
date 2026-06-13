@@ -17,7 +17,10 @@ except ImportError:
 # from connectivity import connect_to_wifi
 #    
 # connect_to_wifi("RedeGamer", "Vick0508")
+import gc
 
+
+gc.collect()
 
 # ============================================================
 # Hardware
@@ -35,6 +38,7 @@ renderer = ILI9341Renderer(display)
 # Application
 # ============================================================
 
+gc.collect()
 app = App(
     renderer=renderer,
     touch=touch
@@ -44,6 +48,6 @@ app.route("home", HomeView)
 app.route("wifi_settings", WiFiSettingsView)
 app.route("wifi_scan", WiFiScanView)
 app.navigate("home")
-
+gc.collect()
 
 app.run()
