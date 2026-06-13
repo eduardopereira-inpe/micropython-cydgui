@@ -22,6 +22,9 @@ class WiFiSettingsView(View):
 
     def build(self):
 
+        if self.parameters is None:
+            self.parameters = {}
+
         # ----------------------------------------------------
         # Top Navigation Button
         # ----------------------------------------------------
@@ -104,7 +107,7 @@ class WiFiSettingsView(View):
             self.textbox2.set_text(my_ip)
             
         else:
-            self.textbox2.set_text("Vick0508")
+            self.textbox2.set_text("")
 
         self.add(self.textbox2)
 
