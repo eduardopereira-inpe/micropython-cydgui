@@ -41,7 +41,7 @@ app = App(
 )
 
 app.route("home", HomeView)
-app.route("settings", WiFiSettingsView)
+app.route("wifi_settings", WiFiSettingsView)
 app.route("wifi_scan", WiFiScanView)
 app.navigate("home")
 
