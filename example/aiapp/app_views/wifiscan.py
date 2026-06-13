@@ -12,13 +12,13 @@ from cydgui.utils.constants import Constants
 class WiFiScanView(View):
     """WiFi network selection screen."""
 
-    def __init__(self, app):
+    def __init__(self, app, parameters):
 
         self.app = app
 
         self._ssid_map = {}
 
-        super().__init__("wifi_scan")
+        super().__init__(app, "wifi_scan", parameters)
 
     # ---------------------------------------------------------
     # Build
@@ -58,13 +58,13 @@ class WiFiScanView(View):
             width=180,
             height=180,
             items=[],
-            on_select=self.on_network_selected
+            on_select=None
         )
 
         self.add(self.networks)
 
         # -----------------------------------------------------
-        # Scroll Up
+        # Up
         # -----------------------------------------------------
 
         self.add(
@@ -74,12 +74,12 @@ class WiFiScanView(View):
                 width=30,
                 height=40,
                 text="^",
-                on_press=self.on_scroll_up
+                on_press=self.on_up
             )
         )
 
         # -----------------------------------------------------
-        # Scroll Down
+        # Down
         # -----------------------------------------------------
 
         self.add(
@@ -89,12 +89,12 @@ class WiFiScanView(View):
                 width=30,
                 height=40,
                 text="v",
-                on_press=self.on_scroll_down
+                on_press=self.on_down
             )
         )
 
         # -----------------------------------------------------
-        # Refresh Scan
+        # Select
         # -----------------------------------------------------
 
         self.add(
@@ -103,8 +103,8 @@ class WiFiScanView(View):
                 y=270,
                 width=120,
                 height=40,
-                text="Refresh",
-                on_press=self.on_refresh
+                text="Select",
+                on_press=self.on_select
             )
         )
 
@@ -123,6 +123,7 @@ class WiFiScanView(View):
             networks = WLAN.scan()
 
             items = []
+
             self._ssid_map = {}
 
             for network in networks:
@@ -160,6 +161,9 @@ class WiFiScanView(View):
                 items
             )
 
+            if items:
+                self.networks.select(0)
+
         except Exception as exc:
 
             print(
@@ -168,40 +172,34 @@ class WiFiScanView(View):
             )
 
     # ---------------------------------------------------------
-    # List Navigation
+    # Navigation
     # ---------------------------------------------------------
 
-    def on_scroll_up(
+    def on_up(
         self,
         button
     ):
-        self.networks.scroll_up()
+        self.networks.move_up()
 
-    def on_scroll_down(
+    def on_down(
         self,
         button
     ):
-        self.networks.scroll_down()
+        self.networks.move_down()
 
     # ---------------------------------------------------------
-    # Refresh
+    # Confirm Selection
     # ---------------------------------------------------------
 
-    def on_refresh(
+    def on_select(
         self,
         button
     ):
-        self.scan_networks()
 
-    # ---------------------------------------------------------
-    # Selection
-    # ---------------------------------------------------------
+        item = self.networks.selected_item
 
-    def on_network_selected(
-        self,
-        index,
-        item
-    ):
+        if item is None:
+            return
 
         ssid = self._ssid_map.get(
             item,
@@ -216,14 +214,14 @@ class WiFiScanView(View):
         # Future:
         #
         # self.app.selected_ssid = ssid
-        # self.navigate("wifi_settings")
+        self.navigate("wifi_settings", parameters={"ssid": ssid})
 
     # ---------------------------------------------------------
-    # Navigation
+    # Home
     # ---------------------------------------------------------
 
     def on_home(
         self,
         button
     ):
-        self.navigate("home")
+        self.navigate("home") 

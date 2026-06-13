@@ -258,13 +258,14 @@ class App:
         
     def navigate(
         self,
-        name
+        name, 
+        parameters: dict | None = None
     ):
 
         view_class = self._routes[name]
 
         self.set_screen(
-            view_class(self)
+            view_class(self, parameters=parameters)
         )
 
     # ------------------------------------------------------------------

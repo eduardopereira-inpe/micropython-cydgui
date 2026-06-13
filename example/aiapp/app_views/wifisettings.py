@@ -1,3 +1,5 @@
+from connectivity import connect_to_wifi
+from connectivity.wifi import WLAN
 import gc
 from cydgui.core.view import View
 
@@ -6,7 +8,6 @@ from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.utils.constants import Constants
-# from connectivity import connect_to_wifi
 
 # ============================================================
 # WiFi Settings View (Improved Layout)
@@ -14,9 +15,10 @@ from cydgui.utils.constants import Constants
 
 class WiFiSettingsView(View):
 
-    def __init__(self, app):
+    def __init__(self, app, parameters={}):
         self.app = app
-        super().__init__("wifi_settings")
+
+        super().__init__(app, "wifi_settings", parameters)
 
     def build(self):
 
@@ -68,7 +70,12 @@ class WiFiSettingsView(View):
             width=Constants.DISPLAY_WIDTH - 20,
             height=30
         )
-        self.textbox.set_text("RedeGamer")
+
+        if "ssid" in self.parameters:
+            self.textbox.set_text(self.parameters["ssid"])
+        else:
+            self.textbox.set_text("")
+
         self.add(self.textbox)
 
         # ====================================================
@@ -91,7 +98,14 @@ class WiFiSettingsView(View):
             width=Constants.DISPLAY_WIDTH - 20,
             height=30
         )
-        self.textbox2.set_text("Vick0508")
+        
+        if WLAN.isconnected():
+            my_ip = WLAN.ifconfig()[0]
+            self.textbox2.set_text(my_ip)
+            
+        else:
+            self.textbox2.set_text("Vick0508")
+
         self.add(self.textbox2)
 
         # ====================================================
@@ -124,27 +138,31 @@ class WiFiSettingsView(View):
         else:
             target = self.textbox2  
             self.textbox.blur()
-
-        
+            
+        print(k)        
 
         if k == "BACKSPACE":
             if len(target.text) > 0:
                 target.backspace()
+                
+        
 
         elif k == "\n":
             ssid = self.textbox.text
             password = self.textbox2.text
 
             gc.collect()  # Limpa memória antes de tentar conectar
+            print("Free memory:", gc.mem_free())
 
-#             if ssid and password:
-#                 
-#                 success = connect_to_wifi(ssid, password)
-# 
-#                 if success:
-#                     self.textbox2.set_text("Connected!")
-#                 else:
-#                     self.textbox2.set_text("Connection Failed")
+            if ssid and password:
+                
+                success = connect_to_wifi(ssid, password)
+
+                if success:
+                    my_ip = WLAN.ifconfig()[0]
+                    self.textbox2.set_text(my_ip)
+                else:
+                    self.textbox2.set_text("Connection Failed")
         else:
             if k is not None:
                 target.insert(k)
@@ -153,5 +171,4 @@ class WiFiSettingsView(View):
     # Navigation
     # ========================================================
     def on_home(self, button):
-        self.clear()
         self.navigate("home")

@@ -2,6 +2,9 @@
 
 A lightweight GUI framework for MicroPython running on the **Cheap Yellow Display (CYD)** — ESP32 board with ILI9341 touchscreen.
 
+![Alt text](./images/cydgui.svg)
+
+
 ## Overview
 
 `cydgui` provides a simple, view-based UI model for building multi-screen applications on constrained hardware:

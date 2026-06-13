@@ -1,4 +1,4 @@
-from connectivity import connect_to_wifi
+from connectivity.wifi import WLAN
 
 from cydgui.driver import CYD
 from cydgui.render.ili9341_renderer import ILI9341Renderer
@@ -7,7 +7,7 @@ from cydgui.app import App
 
 from app_views.home import HomeView
 from app_views.wifisettings import WiFiSettingsView
-from app_views.selectwifi import WiFiSelectionView
+from app_views.wifiscan import WiFiScanView
 
 try:
     import uasyncio as asyncio
@@ -42,7 +42,7 @@ app = App(
 
 app.route("home", HomeView)
 app.route("settings", WiFiSettingsView)
-
+app.route("wifi_scan", WiFiScanView)
 app.navigate("home")
 
 

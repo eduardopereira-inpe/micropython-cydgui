@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 90" width="520" height="360" style="background-color: #0A0A0A; font-family: monospace;">
+  
+  <!-- 1. Fundo Tecnológico (Grid Pontilhado) -->
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect x="10" y="10" width="1" height="1" fill="#424242" />
+    </pattern>
+  </defs>
+  <rect width="130" height="90" fill="url(#grid)" />
+
+  <g stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    
+    <!-- 2. Base Física: Placa CYD -->
+    <!-- Espessura e Bordas (Cinza) -->
+    <line x1="35" y1="65" x2="35" y2="73" stroke="#424242" />
+    <line x1="65" y1="80" x2="65" y2="88" stroke="#424242" />
+    <line x1="95" y1="65" x2="95" y2="73" stroke="#424242" />
+    <line x1="35" y1="73" x2="65" y2="88" stroke="#424242" />
+    <line x1="65" y1="88" x2="95" y2="73" stroke="#424242" />
+    
+    <!-- Face Superior (Amarelo) -->
+    <polygon points="65,50 35,65 65,80 95,65" fill="none" stroke="#FFFF00" />
+    
+    <!-- Chip ESP32 Centralizado -->
+    <polygon points="65,60 55,65 65,70 75,65" fill="none" stroke="#FFFF00" />
+
+    <!-- 3. Comunicação IoT: Conexões Verticais -->
+    <line x1="35" y1="30" x2="35" y2="65" stroke="#424242" />
+    <line x1="95" y1="30" x2="95" y2="65" stroke="#424242" />
+    
+    <!-- Pacotes de Dados (Branco) -->
+    <rect x="33" y="45" width="4" height="4" fill="#FFFFFF" stroke="none" />
+    <rect x="93" y="50" width="4" height="4" fill="#FFFFFF" stroke="none" />
+
+    <!-- 4. Tela Flutuante: A GUI -->
+    <!-- Borda Externa (Cyan) -->
+    <polygon points="65,15 35,30 65,45 95,30" fill="none" stroke="#00FFFF" />
+    
+    <!-- Wireframe Interno (Branco) -->
+    <polygon points="65,20 45,30 65,40 85,30" fill="none" stroke="#FFFFFF" />
+    
+    <!-- Gráficos da Interface -->
+    <line x1="55" y1="35" x2="55" y2="25" stroke="#FF00FF" /> <!-- Barra Magenta -->
+    <line x1="65" y1="40" x2="65" y2="20" stroke="#00FFFF" /> <!-- Barra Cyan -->
+    <line x1="75" y1="35" x2="75" y2="28" stroke="#FFFF00" /> <!-- Barra Amarela -->
+
+    <!-- 5. Nódulos IoT -->
+    <circle cx="65" cy="15" r="1.5" fill="#FFFFFF" stroke="none" />
+    <circle cx="35" cy="30" r="1.5" fill="#FFFFFF" stroke="none" />
+    <circle cx="65" cy="45" r="1.5" fill="#FFFFFF" stroke="none" />
+    <circle cx="95" cy="30" r="1.5" fill="#FFFFFF" stroke="none" />
+
+    <!-- 6. Emissão de Sinal Wi-Fi (Arcos) -->
+    <!-- Utilizando caminhos SVG para desenhar arcos de 210 a 330 graus -->
+    <path d="M 59.8 12 A 6 6 0 0 1 70.2 12" fill="none" stroke="#00FFFF" />
+    <path d="M 56.3 10 A 10 10 0 0 1 73.7 10" fill="none" stroke="#00FFFF" />
+    <path d="M 52.9 8  A 14 14 0 0 1 77.1 8"  fill="none" stroke="#00FFFF" />
+  </g>
+
+  <!-- 7. Tipografia -->
+  <!-- A coordenada Y em SVG representa a base do texto -->
+  <text x="4" y="10" font-size="8" fill="#FFFF00" font-weight="bold">CYD</text>
+  <text x="105" y="10" font-size="8" fill="#00FFFF" font-weight="bold">GUI</text>
+  
+</svg>

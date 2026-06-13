@@ -41,7 +41,8 @@ class View(Screen):
     def __init__(
         self,
         app=None,
-        name: str = None
+        name: str|None = None,
+        parameters: dict | None = None
     ) -> None:
         """
         Initialize view.
@@ -51,9 +52,12 @@ class View(Screen):
                 Optional application instance.
             name:
                 Optional screen name.
+            parameters:
+                Optional dictionary of parameters.
         """
 
         self.app = app
+        self.parameters = parameters
 
         super().__init__(
             name=name or self.__class__.__name__
@@ -67,7 +71,8 @@ class View(Screen):
 
     def navigate(
         self,
-        route: str
+        route: str,
+        parameters: dict | None = None
     ) -> None:
         """
         Navigate to another registered route.
@@ -79,8 +84,13 @@ class View(Screen):
 
         if self.app is None:
             return
+        
+        print(route, parameters)
 
-        self.app.navigate(route)
+        if parameters is None:
+            parameters = {}
+
+        self.app.navigate(route, parameters=parameters)
 
     # ------------------------------------------------------------------
     # Lifecycle
