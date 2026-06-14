@@ -6,6 +6,7 @@ from cydgui.app import App
 
 from cydgui.driver.tft_touch import TFTTouch
 from app_views.home import HomeView
+from app_views.terminal import TerminalView
 
 from udotenv.dotenv import load_dotenv
 
@@ -49,8 +50,10 @@ app = App(
 )
 
 app.route("home", HomeView)
+app.route("terminal", TerminalView)
 
 app.navigate("home", parameters={"ssid": SSID, "ip": ip })
+
 gc.collect()
 
 app.run()

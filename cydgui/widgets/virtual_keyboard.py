@@ -2,15 +2,17 @@
 cydgui.widgets.virtual_keyboard
 ================================
 
-Stable on-screen keyboard for CYD GUI framework.
+Modern on-screen keyboard for CYD GUI framework.
 
-Fixes:
-------
-- Shortened control labels (^, <-, SPC, OK) to fit small screens (240x320)
-- Implemented Numeric/Symbol layout toggle (123 / ABC)
-- No layout rebuild inside draw() unless state changes
-- Uses local coordinates correctly
-- Safe hit-test
+Features:
+---------
+- Alphabetic and numeric layouts
+- Variable key widths
+- Floating keyboard style
+- Soft shadow effect
+- Shift active highlight
+- Rounded buttons
+- Efficient cached layout
 """
 
 from cydgui.core.widget import Widget
@@ -18,9 +20,8 @@ from cydgui.core.touch_event import TouchEvent
 
 
 class VirtualKeyboard(Widget):
-    """On-screen virtual keyboard."""
+    """Modern on-screen virtual keyboard."""
 
-    # Layout Alfabético
     ROWS_ALPHA = [
         list("QWERTYUIOP"),
         list("ASDFGHJKL"),
@@ -28,7 +29,6 @@ class VirtualKeyboard(Widget):
         ["123", "SPC", "OK"]
     ]
 
-    # Layout Numérico e Símbolos
     ROWS_NUM = [
         list("1234567890"),
         list("@#$_&-+()="),
@@ -38,6 +38,7 @@ class VirtualKeyboard(Widget):
 
     KEY_H = 28
     SPACING = 2
+    PADDING = 4
 
     def __init__(
         self,
@@ -46,13 +47,21 @@ class VirtualKeyboard(Widget):
         width=240,
         height=120,
         on_key=None,
-        bg=0x0000,
-        key_bg=0x2104,
+        bg=0x0841,
+        key_bg=0x3186,
         key_color=0xFFFF,
-        accent=0x07E0,
-        radius=3,
+        accent=0x04DF,
+        border_color=0xC618,
+        shadow_color=0x0000,
+        shift_active=0xFD20,
+        radius=4,
     ):
-        super().__init__(x=x, y=y, width=width, height=height)
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height
+        )
 
         self._on_key = on_key
 
@@ -60,103 +69,195 @@ class VirtualKeyboard(Widget):
         self._key_bg = key_bg
         self._key_color = key_color
         self._accent = accent
+
+        self._border_color = border_color
+        self._shadow_color = shadow_color
+        self._shift_active = shift_active
+
         self._radius = radius
 
         self._shift = False
         self._numeric = False
-        self.ROWS = self.ROWS_ALPHA  # Layout ativo
 
-        # cached layout (LOCAL coordinates only)
+        self.ROWS = self.ROWS_ALPHA
+
         self._keys = []
         self._layout_dirty = True
 
-    # ------------------------------------------------------------
-    # Layout (ONLY when needed)
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Layout
+    # ---------------------------------------------------------
+
+    def _key_units(self, key):
+        """Return relative width units."""
+
+        if key == "SPC":
+            return 4.0
+
+        if key in ("123", "ABC"):
+            return 1.8
+
+        if key == "OK":
+            return 1.8
+
+        if key == "<-":
+            return 1.8
+
+        if key == "^":
+            return 1.5
+
+        return 1.0
 
     def _build_layout(self):
+        """Build keyboard layout."""
 
         self._keys = []
 
-        y = 0  # LOCAL coordinate
+        y = self.PADDING
 
         for row in self.ROWS:
 
-            n = len(row)
-            key_w = (self.width // n) - self.SPACING
+            units = sum(
+                self._key_units(key)
+                for key in row
+            )
 
-            x = 0  # LOCAL coordinate
+            available_w = (
+                self.width
+                - (self.PADDING * 2)
+                - ((len(row) - 1) * self.SPACING)
+            )
 
-            for key in row:
+            px_per_unit = available_w / units
 
-                self._keys.append((
-                    x,
-                    y,
-                    key_w,
-                    self.KEY_H,
-                    key
-                ))
+            x = self.PADDING
 
-                x += key_w + self.SPACING
+            for index, key in enumerate(row):
+
+                if index == len(row) - 1:
+
+                    kw = (
+                        self.width
+                        - self.PADDING
+                        - x
+                    )
+
+                else:
+
+                    kw = int(
+                        px_per_unit *
+                        self._key_units(key)
+                    )
+
+                self._keys.append(
+                    (
+                        x,
+                        y,
+                        kw,
+                        self.KEY_H,
+                        key
+                    )
+                )
+
+                x += kw + self.SPACING
 
             y += self.KEY_H + self.SPACING
 
         self._layout_dirty = False
 
-    # ------------------------------------------------------------
-    # Label logic
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Labels
+    # ---------------------------------------------------------
 
     def _label(self, key):
-        # Retorna o símbolo de controle puro
-        if key in ("^", "<-", "SPC", "OK", "123", "ABC"):
+
+        if key in (
+            "^",
+            "<-",
+            "SPC",
+            "OK",
+            "123",
+            "ABC"
+        ):
             return key
 
-        # Aplica Shift nas letras
-        return key.upper() if self._shift else key.lower()
+        return (
+            key.upper()
+            if self._shift
+            else key.lower()
+        )
+
+    # ---------------------------------------------------------
+    # Emit
+    # ---------------------------------------------------------
 
     def _emit(self, key):
-        # Trata teclas de mudança de estado interno primeiro (funciona mesmo sem on_key)
+
         if key == "^":
+
             self._shift = not self._shift
+
             self.invalidate()
-            return
-            
-        if key == "123":
-            self._numeric = True
-            self.ROWS = self.ROWS_NUM
-            self._layout_dirty = True
-            self.invalidate()
-            return
-            
-        if key == "ABC":
-            self._numeric = False
-            self.ROWS = self.ROWS_ALPHA
-            self._layout_dirty = True
-            self.invalidate()
+
             return
 
-        # Se não houver callback para o input de texto, interrompe aqui
+        if key == "123":
+
+            self._numeric = True
+
+            self.ROWS = self.ROWS_NUM
+
+            self._layout_dirty = True
+
+            self.invalidate()
+
+            if self.parent:
+                self.parent.invalidate()
+
+            return
+
+        if key == "ABC":
+
+            self._numeric = False
+
+            self.ROWS = self.ROWS_ALPHA
+
+            self._layout_dirty = True
+
+            self.invalidate()
+
+            if self.parent:
+                self.parent.invalidate()
+
+            return
         if self._on_key is None:
             return
 
         if key == "SPC":
+
             self._on_key(" ")
+
             return
 
         if key == "<-":
+
             self._on_key("BACKSPACE")
+
             return
 
         if key == "OK":
+
             self._on_key("\n")
+
             return
 
-        self._on_key(self._label(key))
+        self._on_key(
+            self._label(key)
+        )
 
-    # ------------------------------------------------------------
-    # Hit test (LOCAL coordinates)
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Hit Test
+    # ---------------------------------------------------------
 
     def _hit_test(self, x, y):
 
@@ -165,14 +266,37 @@ class VirtualKeyboard(Widget):
 
         for kx, ky, kw, kh, key in self._keys:
 
-            if kx <= lx < kx + kw and ky <= ly < ky + kh:
+            if (
+                kx <= lx < kx + kw and
+                ky <= ly < ky + kh
+            ):
                 return key
 
         return None
 
-    # ------------------------------------------------------------
-    # Drawing
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Colors
+    # ---------------------------------------------------------
+
+    def _key_background(self, key):
+
+        if key == "^" and self._shift:
+            return self._shift_active
+
+        if key in (
+            "^",
+            "<-",
+            "OK",
+            "123",
+            "ABC"
+        ):
+            return self._accent
+
+        return self._key_bg
+
+    # ---------------------------------------------------------
+    # Draw
+    # ---------------------------------------------------------
 
     def draw(self, renderer):
 
@@ -182,7 +306,11 @@ class VirtualKeyboard(Widget):
         if self._layout_dirty:
             self._build_layout()
 
-        # background
+        #
+        # IMPORTANT:
+        # Fully clear keyboard area before redraw.
+        #
+
         renderer.fill_rect(
             self.absolute_x,
             self.absolute_y,
@@ -191,19 +319,42 @@ class VirtualKeyboard(Widget):
             self._bg
         )
 
-        for kx, ky, kw, kh, key in self._keys:
+        #
+        # Optional outer frame
+        #
 
-            label = self._label(key)
+        renderer.draw_round_rect(
+            self.absolute_x,
+            self.absolute_y,
+            self.width,
+            self.height,
+            self._radius + 2,
+            self._border_color
+        )
+
+        for kx, ky, kw, kh, key in self._keys:
 
             ax = self.absolute_x + kx
             ay = self.absolute_y + ky
 
-            # CLAMP safety (prevents ILI9341 crash)
-            if ax < 0 or ay < 0:
-                continue
+            bg = self._key_background(key)
 
-            # Destaca botões especiais com a cor de accent
-            bg = self._accent if key in ("^", "<-", "OK", "123", "ABC") else self._key_bg
+            #
+            # Shadow
+            #
+
+            renderer.fill_round_rect(
+                ax + 1,
+                ay + 1,
+                kw,
+                kh,
+                self._radius,
+                self._shadow_color
+            )
+
+            #
+            # Main button
+            #
 
             renderer.fill_round_rect(
                 ax,
@@ -214,18 +365,38 @@ class VirtualKeyboard(Widget):
                 bg
             )
 
+            #
+            # Border
+            #
+
+            renderer.draw_round_rect(
+                ax,
+                ay,
+                kw,
+                kh,
+                self._radius,
+                self._border_color
+            )
+
+            label = self._label(key)
+
             tw, th = renderer.text_size(label)
 
-            tx = ax + (kw - tw) // 2
-            ty = ay + (kh - th) // 2
+            tx = ax + ((kw - tw) // 2)
+            ty = ay + ((kh - th) // 2)
 
-            renderer.draw_text(tx, ty, label, self._key_color)
+            renderer.draw_text(
+                tx,
+                ty,
+                label,
+                self._key_color
+            )
 
         self.validate()
 
-    # ------------------------------------------------------------
-    # Input
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
+    # Touch
+    # ---------------------------------------------------------
 
     def on_touch(self, event):
 
@@ -235,21 +406,32 @@ class VirtualKeyboard(Widget):
         if not self._keys:
             self._build_layout()
 
-        key = self._hit_test(event.x, event.y)
+        key = self._hit_test(
+            event.x,
+            event.y
+        )
 
         if key is None:
             return False
 
         if event.is_down:
+
             self._emit(key)
+
             return True
 
         return False
 
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
     # Debug
-    # ------------------------------------------------------------
+    # ---------------------------------------------------------
 
     def __repr__(self):
 
-        return f"VirtualKeyboard(x={self.x}, y={self.y}, shift={self._shift}, numeric={self._numeric})"
+        return (
+            f"VirtualKeyboard("
+            f"x={self.x}, "
+            f"y={self.y}, "
+            f"shift={self._shift}, "
+            f"numeric={self._numeric})"
+        )
