@@ -166,3 +166,7 @@ class Constants:
     # ---------------------------------------------------------
 
     MAX_SCREEN_STACK = 16
+
+    TOUCH_INVERT_X = True
+    TOUCH_INVERT_Y = False
+    DISPLAY_ROTATION = 90
