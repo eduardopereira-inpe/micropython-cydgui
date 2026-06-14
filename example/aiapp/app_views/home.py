@@ -5,16 +5,7 @@ from cydgui.widgets.button import Button
 from cydgui.widgets.canvas import Canvas
 import gc
 
-def create_logo():
-    # Instância exata solicitada
-    logo = Canvas(
-        x=55,
-        y=65,
-        width=130,
-        height=90,
-        bg=0x0000,
-        touchable=False
-    )
+def create_logo(logo: Canvas) -> Canvas:
 
     # Limpa qualquer comando residual no canvas
     logo.clear()
@@ -209,9 +200,21 @@ class HomeView(View):
         # Logo Canvas
         # -----------------------------------------------------
 
-        logo = create_logo()
+        # Instância exata solicitada
+        logo = Canvas(
+            x=55,
+            y=65,
+            width=130,
+            height=90,
+            bg=0x0000,
+            touchable=False
+        )
 
         self.add(logo)
+
+        create_logo(logo)
+
+        
         # -----------------------------------------------------
         # Connection Information
         # -----------------------------------------------------

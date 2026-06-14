@@ -98,6 +98,9 @@ class Container(Widget):
             if not child.visible:
                 continue
 
+            if hasattr(child, 'renderer'):
+                child.set_renderer(renderer)
+
             child.draw(renderer)
 
         self.validate()
