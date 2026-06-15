@@ -181,6 +181,5 @@ class HomeView(View):
     # ---------------------------------------------------------
 
     def on_terminal(self, button):
-        self.clear()
         gc.collect()
         self.navigate("terminal")

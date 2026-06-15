@@ -34,7 +34,7 @@ class App:
         renderer,
         touch=None,
         screen=None,
-        frame_delay_ms: int = 16
+        frame_delay_ms: int = 5
     ) -> None:
         """
         Initialize application.

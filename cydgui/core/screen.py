@@ -1,76 +1,49 @@
 """
 cydgui.core.screen
 ==================
-
-A Screen represents a complete application view and acts as the
-root container of a widget hierarchy.
 """
 
 from cydgui.core.container import Container
 
 
 class Screen(Container):
-    """Root container representing a full application screen."""
+    """Root screen without global clear invalidation."""
 
-    def __init__(
-        self,
-        name: str = "",
-        background: int = 0x0000
-    ) -> None:
-
-        super().__init__(
-            x=0,
-            y=0,
-            width=0,
-            height=0
-        )
+    def __init__(self, name: str = "", background: int = 0x0000) -> None:
+        super().__init__(x=0, y=0, width=240, height=320)
 
         self.name = name
         self.background = background
 
-        self._dirty = True
-        self._needs_clear = False
+        self._needs_full_clear = True
 
-    # ------------------------------------------------------------------
-    # Dirty state
-    # ------------------------------------------------------------------
-
-    @property
-    def dirty(self) -> bool:
-        """Return screen invalidation state."""
-        return self._dirty
+    # -------------------------
+    # FIX: NO MORE GLOBAL WIPE PER INVALIDATE
+    # -------------------------
 
     def invalidate(self) -> None:
-        """Mark screen as requiring redraw."""
+        self._dirty = True
+        self._needs_full_clear = True
+
+    def child_invalidated(self, child) -> None:
         self._dirty = True
 
-    def validate(self) -> None:
-        """Mark screen as rendered."""
-        self._dirty = False
+        if self._parent:
+            self._parent.child_invalidated(self)
 
-    # ------------------------------------------------------------------
-    # Drawing
-    # ------------------------------------------------------------------
+    # -------------------------
+    # Drawing FIXED
+    # -------------------------
 
     def draw(self, renderer) -> None:
-        """
-        Draw the complete screen.
-
-        The screen is responsible for clearing the display
-        before drawing the widget tree.
-        """
-
         if not self.visible:
             return
-        
-        if self._needs_clear:
 
+        if self._needs_full_clear:
             renderer.clear(self.background)
-
-            self._needs_clear = False
+            self._needs_full_clear = False
 
         super().draw(renderer)
-
         self.validate()
 
     # ------------------------------------------------------------------

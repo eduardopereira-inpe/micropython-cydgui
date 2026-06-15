@@ -13,6 +13,7 @@ from cydgui.widgets.clock_widget import ClockWidget
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
+import uasyncio as asyncio
 
 class TerminalView(View):
     """Simple terminal application."""
@@ -65,6 +66,7 @@ class TerminalView(View):
             width=80,
             height=20
         )
+        
         self.app.create_task(self.clock.start())
 
 

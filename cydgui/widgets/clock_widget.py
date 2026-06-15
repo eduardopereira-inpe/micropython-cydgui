@@ -14,6 +14,10 @@ class ClockWidget(AsyncWidget):
     LEFT = 0
     CENTER = 1
     RIGHT = 2
+    x = 0
+    y = 0
+    width = 0
+    height = 0
 
     def __init__(self, x, y, width=80, height=20, 
                  color=Colors.WHITE,
@@ -21,7 +25,7 @@ class ClockWidget(AsyncWidget):
                  font=None,
                  align: int = LEFT
                  ):
-        super().__init__(interval_ms=1000)
+        
 
         # Configura as propriedades geométricas herdadas
         self.x = x
@@ -34,6 +38,8 @@ class ClockWidget(AsyncWidget):
         self._bg_color = bg_color  # Guarda a cor de fundo local do widget
         self._font = font
         self._align = align
+        
+        super().__init__(interval_ms=1000)
 
     async def update_async(self):
         t = time.localtime()
