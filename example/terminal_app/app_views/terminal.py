@@ -22,6 +22,7 @@ class TerminalView(View):
     def __init__(self, app, parameters=None):
         self.lines = []
         
+        
         super().__init__(
             app,
             "terminal",
@@ -65,7 +66,8 @@ class TerminalView(View):
             width=80,
             height=20
         )
-        self.app.create_task(self.clock.start())
+        
+        self._clock_task = self.app.create_task(self.clock.start())
 
 
         self.add(self.clock)
@@ -124,6 +126,33 @@ class TerminalView(View):
         self.println("CYD Terminal")
         self.println("Type 'help'")
         self.println("")
+        
+    def destroy(self):
+        """Cleanup view resources before navigation."""
+
+        if hasattr(self, "_clock_task"):
+            try:
+                self._clock_task.cancel()
+            except:
+                pass
+            del self._clock_task
+            gc.collect()
+            self._clock_task = None
+
+        # stop clock explicitly if supported
+        try:
+            self.clock.stop()
+        except:
+            pass
+
+        # remove da árvore primeiro (quebra render graph)
+        if self.parent:
+            try:
+                self.parent.remove(self)
+            except:
+                pass
+
+        self.clear()
 
     # ---------------------------------------------------------
     # Terminal output
@@ -131,17 +160,18 @@ class TerminalView(View):
 
     def println(self, text):
 
-        text = str(text)
-
-        if text == "":
-            text = " "
+        text = str(text) or " "
 
         self.lines.append(text)
 
-        while len(self.lines) > self.MAX_LINES:
+        if len(self.lines) > self.MAX_LINES:
             self.lines.pop(0)
 
-        self.canvas.invalidate()
+        # FIX: avoid immediate redraw storm
+        if hasattr(self.canvas, "request_redraw"):
+            self.canvas.request_redraw()
+        else:
+            self.canvas.invalidate()
 
     # ---------------------------------------------------------
     # Canvas drawing
@@ -277,7 +307,7 @@ class TerminalView(View):
 
     def on_back(self, button):
 
-        self.clear()
+        self.destroy()   # FIX: important cleanup
 
         gc.collect()
 

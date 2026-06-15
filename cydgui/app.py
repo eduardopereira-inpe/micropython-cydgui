@@ -2,25 +2,21 @@
 cydgui.app
 ==========
 
-Core application object.
+Core application object (hardened version for ESP32 MicroPython).
 
-Responsibilities
-----------------
-- Hold renderer and touch driver references.
-- Manage screen navigation.
-- Poll touch events.
-- Generate TouchEvent objects.
-- Render dirty screens.
-- Run the async application loop.
-
-Designed for MicroPython and the Cheap Yellow Display.
+Improvements:
+-------------
+- Safer asyncio task lifecycle management
+- Reduced task leakage on navigation
+- Better screen transition cleanup
+- Yield after cancel to allow uasyncio release
+- More deterministic memory behavior
 """
 
 try:
     import uasyncio as asyncio
 except ImportError:
     import asyncio
-
 
 from cydgui.core.touch_event import TouchEvent
 from cydgui.core.navigation import Navigation
@@ -34,17 +30,8 @@ class App:
         renderer,
         touch=None,
         screen=None,
-        frame_delay_ms: int = 16
+        frame_delay_ms: int = 5
     ) -> None:
-        """
-        Initialize application.
-
-        Args:
-            renderer: Renderer instance.
-            touch: Optional touch driver.
-            screen: Optional initial screen.
-            frame_delay_ms: Main loop delay.
-        """
 
         self._renderer = renderer
         self._touch = touch
@@ -60,7 +47,7 @@ class App:
 
         self._routes = {}
 
-        # NEW: managed async tasks
+        # managed async tasks
         self._tasks = set()
 
         if screen is not None:
@@ -71,18 +58,45 @@ class App:
     # ---------------------------------------------------------
 
     def create_task(self, coro):
-        """Register a managed asyncio task.
+        """Register a managed asyncio task."""
 
-        Args:
-            coro: Coroutine to run.
-        """
         task = asyncio.create_task(coro)
         self._tasks.add(task)
         return task
 
     def _cleanup_tasks(self):
-        """Remove finished tasks."""
-        self._tasks = {t for t in self._tasks if not t.done()}
+        """Remove finished tasks safely."""
+
+        # evita mutação durante iteração indireta
+        alive = set()
+
+        for t in self._tasks:
+            if t.done():
+                continue
+            alive.add(t)
+
+        self._tasks = alive
+
+    def _cancel_all_tasks(self):
+        """Cancel all running tasks safely."""
+
+        if not self._tasks:
+            return
+
+        tasks = list(self._tasks)
+        self._tasks.clear()
+
+        for task in tasks:
+            try:
+                task.cancel()
+            except:
+                pass
+
+        # IMPORTANT: yield to uasyncio so cancellation propagates
+        try:
+            asyncio.sleep_ms(0)
+        except:
+            pass
 
     # ------------------------------------------------------------------
     # Navigation
@@ -90,61 +104,58 @@ class App:
 
     @property
     def screen(self):
-        """Return current active screen."""
-
         return self._navigation.current
 
-    def set_screen(
-        self,
-        screen
-    ) -> None:
-        """
-        Replace current screen.
+    def set_screen(self, screen) -> None:
+        """Replace current screen safely."""
 
-        Args:
-            screen: Screen instance.
-        """
+        # IMPORTANT: ensure previous screen is released if needed
+        if self._navigation.current:
+            old = self._navigation.current
+            try:
+                if hasattr(old, "destroy"):
+                    old.destroy()
+            except:
+                pass
 
         self._navigation.clear()
 
         if screen is not None:
-
             screen.app = self
-
             self._navigation.push(screen)
 
-    def push(
+    def navigate(
         self,
-        screen
-    ) -> None:
+        name,
+        parameters: dict | None = None
+    ):
         """
-        Push a screen onto the navigation stack.
+        Navigate between views safely.
+        Prevents task leakage between screens.
+        """
 
-        Args:
-            screen: Screen instance.
-        """
+        self._cancel_all_tasks()
+
+        view_class = self._routes[name]
+
+        self.set_screen(
+            view_class(self, parameters=parameters)
+        )
+
+    def push(self, screen) -> None:
 
         if screen is None:
             return
 
         screen.app = self
-
         self._navigation.push(screen)
 
     def pop(self):
-        """
-        Pop current screen.
-
-        Returns:
-            Removed screen.
-        """
 
         return self._navigation.pop()
 
     @property
     def navigation(self):
-        """Return navigation manager."""
-
         return self._navigation
 
     # ------------------------------------------------------------------
@@ -152,12 +163,6 @@ class App:
     # ------------------------------------------------------------------
 
     def _poll_touch(self):
-        """
-        Poll touch driver.
-
-        Returns:
-            TouchEvent or None.
-        """
 
         if self._touch is None:
             return None
@@ -204,7 +209,6 @@ class App:
     # ------------------------------------------------------------------
 
     def _render(self) -> None:
-        """Render active screen."""
 
         screen = self.screen
 
@@ -214,10 +218,7 @@ class App:
         if not screen.dirty:
             return
 
-        screen.draw(
-            self._renderer
-        )
-
+        screen.draw(self._renderer)
         self._renderer.flush()
 
     # ------------------------------------------------------------------
@@ -225,14 +226,12 @@ class App:
     # ------------------------------------------------------------------
 
     async def _run_async(self) -> None:
-        """Application async loop."""
 
         self._running = True
 
         while self._running:
 
             event = self._poll_touch()
-
             screen = self.screen
 
             if event is not None and screen is not None:
@@ -240,51 +239,29 @@ class App:
 
             self._render()
 
-            # NEW: cleanup finished UI tasks
+            # cleanup finished tasks
             self._cleanup_tasks()
 
             await asyncio.sleep_ms(self._frame_delay_ms)
+
     # ------------------------------------------------------------------
     # Control
     # ------------------------------------------------------------------
 
     def stop(self) -> None:
-        """Stop application."""
-
         self._running = False
 
     def run(self) -> None:
-        """Start application."""
+        asyncio.run(self._run_async())
 
-        asyncio.run(
-            self._run_async()
-        )
-        
-    def route(
-        self,
-        name,
-        view_class
-    ):
+    def route(self, name, view_class):
         self._routes[name] = view_class
-        
-    def navigate(
-        self,
-        name, 
-        parameters: dict | None = None
-    ):
-
-        view_class = self._routes[name]
-
-        self.set_screen(
-            view_class(self, parameters=parameters)
-        )
 
     # ------------------------------------------------------------------
     # Debug
     # ------------------------------------------------------------------
 
     def __repr__(self) -> str:
-
         return (
             f"App("
             f"screen={self.screen}, "

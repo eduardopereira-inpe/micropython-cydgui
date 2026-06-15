@@ -33,8 +33,11 @@ class Container(Widget):
         )
 
         self._children = []
+        self._dirty_children = {}
 
     def mark_child_dirty(self, widget):
+        self._dirty_children[id(widget)] = widget
+
         if self._parent:
             self._parent.mark_child_dirty(self)
 
@@ -69,11 +72,10 @@ class Container(Widget):
     def clear(self) -> None:
         """Remove all children."""
 
-        children = self._children
-        self._children = []
-
-        for child in children:
+        for child in self._children:
             child.on_detach()
+
+        self._children.clear()
 
         self.invalidate()
 
@@ -81,13 +83,26 @@ class Container(Widget):
     def children(self):
         """Return children."""
 
-        if self._children_tuple is None or len(self._children_tuple) != len(self._children):
-            self._children_tuple = tuple(self._children)
-
-        return self._children_tuple
+        return tuple(self._children)
 
     # ------------------------------------------------------------------
     # Drawing
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Propriedades de Estado (Adicionar antes do draw)
+    # ------------------------------------------------------------------
+
+    @property
+    def dirty(self) -> bool:
+        return self._dirty or len(self._dirty_children) > 0
+
+    def validate(self) -> None:
+        super().validate()
+        self._dirty_children.clear()
+
+    # ------------------------------------------------------------------
+    # Drawing (Substitua o método draw atual)
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
@@ -99,14 +114,14 @@ class Container(Widget):
             if not child.visible:
                 continue
 
-            if not child.dirty:
-                continue
-
-            set_renderer = getattr(child, "set_renderer", None)
-            if set_renderer is not None:
-                set_renderer(renderer)
-
-            child.draw(renderer)
+            # ATENÇÃO AQUI: Usamos a variável interna self._dirty em vez 
+            # da property self.dirty. Isso garante que só os componentes
+            # que realmente mudaram sejam desenhados, economizando CPU.
+            if child.dirty or self._dirty:
+                if hasattr(child, 'renderer'):
+                    child.set_renderer(renderer)
+                
+                child.draw(renderer)
 
         self.validate()
 

@@ -5,8 +5,9 @@ from cydgui.core.view import View
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.canvas import Canvas
+from cydgui.widgets.asynccanvas import AsyncCanvas
 
-def create_logo(logo: Canvas):
+def create_logo(logo: AsyncCanvas):
     """
     Atua como o callback de renderização do Canvas.
     Esta função será chamada automaticamente pelo framework toda vez que 
@@ -143,7 +144,7 @@ class HomeView(View):
         # -----------------------------------------------------
         # Logo Canvas (Configurado com o Callback)
         # -----------------------------------------------------
-        logo = Canvas(
+        self.logo = AsyncCanvas(
             x=55,
             y=65,
             width=130,
@@ -152,8 +153,15 @@ class HomeView(View):
             touchable=False,
             on_draw=create_logo  # <--- Injeta a função de desenho aqui!
         )
+        
+        
+#         task = create_logo(self.logo)
+#         
+#         
+#         self._canvas_task = self.app.create_task(self.logo.start())
 
-        self.add(logo)  # O Container vai gerenciar e disparar o desenho no tempo correto
+        self.add(self.logo)  # O Container vai gerenciar e disparar o desenho no tempo correto
+        
 
         # -----------------------------------------------------
         # Connection Information

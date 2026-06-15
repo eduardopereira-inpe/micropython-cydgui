@@ -12,6 +12,7 @@ class AsyncWidget(Widget):
         super().__init__(**kwargs)
         self.interval_ms = interval_ms
         self._running = False
+        self._task = None
 
     async def start(self):
         """Start async loop gracefully directly in the current task."""
@@ -24,6 +25,7 @@ class AsyncWidget(Widget):
     async def stop(self):
         """Stop async loop."""
         self._running = False
+        self._task = None
 
     async def _loop(self):
         """Internal loop."""

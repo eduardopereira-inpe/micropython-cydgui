@@ -35,10 +35,14 @@ class Screen(Container):
     # Dirty state
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Dirty state (Substitua os métodos dirty e validate atuais)
+    # ------------------------------------------------------------------
+
     @property
     def dirty(self) -> bool:
         """Return screen invalidation state."""
-        return self._dirty
+        return self._dirty or len(self._dirty_children) > 0
 
     def invalidate(self) -> None:
         """Mark screen as requiring redraw."""
@@ -47,6 +51,7 @@ class Screen(Container):
     def validate(self) -> None:
         """Mark screen as rendered."""
         self._dirty = False
+        self._dirty_children.clear()
 
     # ------------------------------------------------------------------
     # Drawing

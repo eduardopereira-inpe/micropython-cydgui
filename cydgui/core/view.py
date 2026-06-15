@@ -69,29 +69,22 @@ class View(Screen):
     # Navigation
     # ------------------------------------------------------------------
 
-    def navigate(
-        self,
-        route: str,
-        parameters: dict | None = None
-    ) -> None:
-        """
-        Navigate to another registered route.
-
-        Args:
-            route:
-                Route name.
-        """
+    def navigate(self, route: str, parameters: dict | None = None) -> None:
 
         if self.app is None:
             return
-        
-        print(route, parameters)
+
+        # IMPORTANT: allow cleanup hook
+        if hasattr(self, "destroy"):
+            try:
+                self.destroy()
+            except:
+                pass
 
         if parameters is None:
             parameters = {}
 
         self.app.navigate(route, parameters=parameters)
-
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
