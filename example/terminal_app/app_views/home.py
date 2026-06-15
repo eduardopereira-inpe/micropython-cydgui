@@ -220,29 +220,45 @@ class HomeView(View):
         # -----------------------------------------------------
 
         self.add(
+                    Button(
+                        x=10,
+                        y=265,
+                        width=70,
+                        height=30,
+                        text="term",
+                        on_press=self.on_terminal
+                    )
+                )
+
+        self.add(
             Button(
-                x=10,
+                x=85,  # 10 (margem) + 70 (botão 1) + 5 (espaço)
                 y=265,
-                width=105,
+                width=70,
                 height=30,
-                text="terminal",
-                on_press=self.on_terminal
+                text="mem",
+                on_press=self.on_memory
             )
         )
 
         self.add(
             Button(
-                x=125,
+                x=160, # 85 (x anterior) + 70 (botão 2) + 5 (espaço)
                 y=265,
-                width=105,
+                width=70,
                 height=30,
-                text="memory",
-                on_press=self.on_memory
+                text="speed",
+                on_press=self.on_speedometer
             )
         )
     # ---------------------------------------------------------
     # NAV
     # ---------------------------------------------------------
+
+    def on_speedometer(self, button):
+        self.clear()
+        gc.collect()
+        self.navigate("speedometer")
     
     def on_memory(self, button):
         self.clear()

@@ -17,6 +17,7 @@ from cydgui.driver.tft_touch import TFTTouch
 from app_views.home import HomeView
 from app_views.terminal import TerminalView
 from app_views.memory_graph import MemoryGraphView
+from app_views.speeddometer import SpeedometerView
 
 from udotenv.dotenv import load_dotenv
 
@@ -65,7 +66,7 @@ app = App(
 app.route("home", HomeView)
 app.route("terminal", TerminalView)
 app.route("memory_graph", MemoryGraphView)
-
+app.route("speedometer", SpeedometerView)
 app.navigate("home", parameters={"ssid": SSID, "ip": ip })
 
 app.run()
