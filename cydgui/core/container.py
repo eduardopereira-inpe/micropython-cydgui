@@ -33,11 +33,8 @@ class Container(Widget):
         )
 
         self._children = []
-        self._dirty_children = set()
 
     def mark_child_dirty(self, widget):
-        self._dirty_children.add(widget)
-
         if self._parent:
             self._parent.mark_child_dirty(self)
 
@@ -72,10 +69,11 @@ class Container(Widget):
     def clear(self) -> None:
         """Remove all children."""
 
-        for child in self._children:
-            child.on_detach()
+        children = self._children
+        self._children = []
 
-        self._children.clear()
+        for child in children:
+            child.on_detach()
 
         self.invalidate()
 
@@ -83,7 +81,10 @@ class Container(Widget):
     def children(self):
         """Return children."""
 
-        return tuple(self._children)
+        if self._children_tuple is None or len(self._children_tuple) != len(self._children):
+            self._children_tuple = tuple(self._children)
+
+        return self._children_tuple
 
     # ------------------------------------------------------------------
     # Drawing
@@ -101,13 +102,11 @@ class Container(Widget):
             if not child.dirty:
                 continue
 
-            # Só desenha se o filho estiver marcado como dirty 
-            # OU se o próprio container pai foi totalmente invalidado
-            if child.dirty or self.dirty:
-                if hasattr(child, 'renderer'):
-                    child.set_renderer(renderer)
-                
-                child.draw(renderer)
+            set_renderer = getattr(child, "set_renderer", None)
+            if set_renderer is not None:
+                set_renderer(renderer)
+
+            child.draw(renderer)
 
         self.validate()
 
