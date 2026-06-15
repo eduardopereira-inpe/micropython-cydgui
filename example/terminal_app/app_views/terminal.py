@@ -8,6 +8,7 @@ from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.widgets.textbox import TextBox
 from cydgui.widgets.clock_widget import ClockWidget
+from cydgui.widgets.memory_graph import MemoryGraphWidget
 
 
 from cydgui.utils.constants import Constants
@@ -18,63 +19,54 @@ import uasyncio as asyncio
 class TerminalView(View):
     """Simple terminal application."""
 
-    MAX_LINES = 10
+    MAX_LINES = 5
 
     def __init__(self, app, parameters=None):
         self.lines = []
-        
-        super().__init__(
-            app,
-            "terminal",
-            parameters
-        )
+        super().__init__(app, "terminal", parameters)
 
     # ---------------------------------------------------------
-    # Build
+    # BUILD
     # ---------------------------------------------------------
 
     def build(self):
 
-        if self.parameters is None:
-            self.parameters = {}
+        self.parameters = self.parameters or {}
 
-        self.add(
-            Button(
-                x=10,
-                y=10,
-                width=20,
-                height=20,
-                text="<",
-                on_press=self.on_back
-            )
-        )
+        # -----------------------------------------------------
+        # HEADER (fixo e leve)
+        # -----------------------------------------------------
 
-        self.add(
-            Label(
-                x=0,
-                y=10,
-                width=Constants.DISPLAY_WIDTH - 50,
-                height=20,
-                text="Terminal",
-                align=Label.CENTER
-            )
-        )
-        
+        self.add(Button(
+            x=10,
+            y=10,
+            width=25,
+            height=20,
+            text="<",
+            on_press=self.on_back
+        ))
+
+        self.add(Label(
+            x=0,
+            y=10,
+            width=Constants.DISPLAY_WIDTH,
+            height=20,
+            text="Terminal",
+            align=Label.CENTER
+        ))
+
         self.clock = ClockWidget(
-            x=Constants.DISPLAY_WIDTH - 90,
+            x=Constants.DISPLAY_WIDTH - 85,
             y=10,
             width=80,
             height=20
         )
-        
-        self.app.create_task(self.clock.start())
 
-
+        self._clock_task = self.app.create_task(self.clock.start())
         self.add(self.clock)
-   
 
         # -----------------------------------------------------
-        # Terminal output
+        # TERMINAL OUTPUT (MAIOR PRIORIDADE)
         # -----------------------------------------------------
 
         self.canvas = Canvas(
@@ -91,7 +83,7 @@ class TerminalView(View):
         self.add(self.canvas)
 
         # -----------------------------------------------------
-        # Command input
+        # INPUT (MAIS RESPIRADO)
         # -----------------------------------------------------
 
         self.textbox = TextBox(
@@ -100,32 +92,55 @@ class TerminalView(View):
             width=Constants.DISPLAY_WIDTH - 20,
             height=28
         )
-        
-        self.textbox.set_text("")
 
+        self.textbox.set_text("")
         self.add(self.textbox)
 
         # -----------------------------------------------------
-        # Virtual keyboard
+        # KEYBOARD (FIXO, SEM COMPETIÇÃO VISUAL)
         # -----------------------------------------------------
 
         self.keyboard = VirtualKeyboard(
             x=10,
-            y=188,
+            y=190,
             width=Constants.DISPLAY_WIDTH - 20,
-            height=122,
+            height=120,
             on_key=self.on_key
         )
 
         self.add(self.keyboard)
 
-        # -----------------------------------------------------
-        # Startup messages
-        # -----------------------------------------------------
-
+        # boot
         self.println("CYD Terminal")
         self.println("Type 'help'")
         self.println("")
+        
+    def destroy(self):
+        """Cleanup view resources before navigation."""
+
+        if hasattr(self, "_clock_task"):
+            try:
+                self._clock_task.cancel()
+            except:
+                pass
+            del self._clock_task
+            gc.collect()
+            self._clock_task = None
+
+        # stop clock explicitly if supported
+        try:
+            self.clock.stop()
+        except:
+            pass
+
+        # remove da árvore primeiro (quebra render graph)
+        if self.parent:
+            try:
+                self.parent.remove(self)
+            except:
+                pass
+
+        self.clear()
 
     # ---------------------------------------------------------
     # Terminal output
@@ -133,17 +148,18 @@ class TerminalView(View):
 
     def println(self, text):
 
-        text = str(text)
-
-        if text == "":
-            text = " "
+        text = str(text) or " "
 
         self.lines.append(text)
 
-        while len(self.lines) > self.MAX_LINES:
+        if len(self.lines) > self.MAX_LINES:
             self.lines.pop(0)
 
-        self.canvas.invalidate()
+        # FIX: avoid immediate redraw storm
+        if hasattr(self.canvas, "request_redraw"):
+            self.canvas.request_redraw()
+        else:
+            self.canvas.invalidate()
 
     # ---------------------------------------------------------
     # Canvas drawing
@@ -279,7 +295,7 @@ class TerminalView(View):
 
     def on_back(self, button):
 
-        self.clear()
+        self.destroy()   # FIX: important cleanup
 
         gc.collect()
 

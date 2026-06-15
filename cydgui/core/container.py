@@ -12,22 +12,10 @@ class Container(Widget):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._children = []
-        self._dirty_children = set()
+        self._dirty_children = {}
 
-    # -------------------------
-    # Dirty propagation FIX
-    # -------------------------
-
-    def child_invalidated(self, child: Widget) -> None:
-        """
-        Receives dirty notification from children.
-
-        IMPORTANT:
-        We DO NOT clear screen here anymore.
-        We only mark subtree dirty.
-        """
-        self._dirty = True
-        self._dirty_children.add(child)
+    def mark_child_dirty(self, widget):
+        self._dirty_children[id(widget)] = widget
 
         if self._parent:
             self._parent.child_invalidated(self)
@@ -53,9 +41,25 @@ class Container(Widget):
     def children(self):
         return tuple(self._children)
 
-    # -------------------------
-    # Drawing (FIXED: NO FULL WIPE LOGIC HERE)
-    # -------------------------
+    # ------------------------------------------------------------------
+    # Drawing
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Propriedades de Estado (Adicionar antes do draw)
+    # ------------------------------------------------------------------
+
+    @property
+    def dirty(self) -> bool:
+        return self._dirty or len(self._dirty_children) > 0
+
+    def validate(self) -> None:
+        super().validate()
+        self._dirty_children.clear()
+
+    # ------------------------------------------------------------------
+    # Drawing (Substitua o método draw atual)
+    # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
         if not self.visible:
@@ -65,7 +69,13 @@ class Container(Widget):
             if not child.visible:
                 continue
 
-            if child.dirty:
+            # ATENÇÃO AQUI: Usamos a variável interna self._dirty em vez 
+            # da property self.dirty. Isso garante que só os componentes
+            # que realmente mudaram sejam desenhados, economizando CPU.
+            if child.dirty or self._dirty:
+                if hasattr(child, 'renderer'):
+                    child.set_renderer(renderer)
+                
                 child.draw(renderer)
 
         self.validate()

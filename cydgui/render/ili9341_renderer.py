@@ -78,6 +78,15 @@ class ILI9341Renderer(Renderer):
     # Display control
     # ------------------------------------------------------------------
 
+    def block(self, x0, y0, x1, y1, data):
+        self._driver.block(
+            x0,
+            y0,
+            x1,
+            y1,
+            data
+        )
+
     def clear(
         self,
         color: int = 0x0000

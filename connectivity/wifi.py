@@ -116,22 +116,28 @@ def connect_to_wifi(ssid, password, verbose=True):
 
         _log("Wi-Fi connected.", verbose)
         _log(WLAN.ifconfig(), verbose)
+        
+        
 
-        try:
-            ntptime.settime()
-            _log(
-                "Time synchronized: {}".format(time.localtime()),
-                verbose,
-            )
-        except Exception as error:
-            _log(
-                "[wifi] NTP synchronization failed: {}".format(error),
-                verbose,
-            )
-
-        return True
+        for tentativa in range(2):
+            try:
+                # Tenta sincronizar com o servidor NTP padrão
+                ntptime.settime()
+                _log(
+                    "Time synchronized: {}".format(time.localtime()),
+                    verbose,
+                )
+                return True
+            except Exception as e:
+                # CORRIGIDO: Alterado 'error' para 'e' correspondente ao except atual
+                _log(
+                    "[wifi] NTP synchronization failed: {}".format(e),
+                    verbose,
+                )
+                time.sleep_ms(2000)  
 
     _log("Wi-Fi connection failed.", verbose)
     return False
+
 
 

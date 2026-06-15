@@ -17,9 +17,18 @@ class Screen(Container):
 
         self._needs_full_clear = True
 
-    # -------------------------
-    # FIX: NO MORE GLOBAL WIPE PER INVALIDATE
-    # -------------------------
+    # ------------------------------------------------------------------
+    # Dirty state
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Dirty state (Substitua os métodos dirty e validate atuais)
+    # ------------------------------------------------------------------
+
+    @property
+    def dirty(self) -> bool:
+        """Return screen invalidation state."""
+        return self._dirty or len(self._dirty_children) > 0
 
     def invalidate(self) -> None:
         self._dirty = True
@@ -28,8 +37,10 @@ class Screen(Container):
     def child_invalidated(self, child) -> None:
         self._dirty = True
 
-        if self._parent:
-            self._parent.child_invalidated(self)
+    def validate(self) -> None:
+        """Mark screen as rendered."""
+        self._dirty = False
+        self._dirty_children.clear()
 
     # -------------------------
     # Drawing FIXED

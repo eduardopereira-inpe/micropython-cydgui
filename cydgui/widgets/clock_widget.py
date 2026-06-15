@@ -1,60 +1,45 @@
-# cydgui/widgets/clock_widget.py
-
 import time
-from cydgui.widgets.async_widget import AsyncWidget
+from cydgui.core.async_widget import AsyncWidget
 from cydgui.utils.colors import Colors
-import uasyncio as asyncio
-
 
 class ClockWidget(AsyncWidget):
-    """
-    Live clock widget updated asynchronously.
-    """
+    """Live clock widget updated asynchronously."""
 
     LEFT = 0
     CENTER = 1
     RIGHT = 2
-    x = 0
-    y = 0
-    width = 0
-    height = 0
+
+    # REMOVIDAS as variáveis estáticas (x, y, width, height) que quebravam o Rect do Widget
 
     def __init__(self, x, y, width=80, height=20, 
                  color=Colors.WHITE,
-                 bg_color=0x0000,  # Adicionado para saber qual cor usar no fill_rect
+                 bg_color=0x0000,  
                  font=None,
-                 align: int = LEFT
-                 ):
-        
+                 align: int = LEFT):
 
-        # Configura as propriedades geométricas herdadas
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+        # Repassa a geometria inteira para o AsyncWidget (que mandará para o Widget)
+        super().__init__(
+            interval_ms=1000,
+            x=x, y=y, width=width, height=height
+        )
 
         self._text = "00:00:00"
         self._color = color
-        self._bg_color = bg_color  # Guarda a cor de fundo local do widget
+        self._bg_color = bg_color 
         self._font = font
         self._align = align
         
         super().__init__(interval_ms=1000)
 
     async def update_async(self):
+        """Atualiza apenas o texto periodicamente."""
         t = time.localtime()
         self._text = "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])
 
-    async def start(self):
-        """Update clock periodically without forcing full UI redraw."""
-        while True:
-            await self.update_async()
-            self.invalidate()
-            await asyncio.sleep(1)
+    # O método start() foi removido pois a classe pai AsyncWidget agora gerencia isso perfeitamente!
 
     def draw(self, renderer) -> None:
         """Draw label."""
-
         if not self.visible:
             return
         
@@ -73,20 +58,19 @@ class ClockWidget(AsyncWidget):
             self._font
         )
 
-        x = self.absolute_x
+        draw_x = self.absolute_x
 
         if self._align == self.CENTER:
-            x += (self.width - text_w) // 2
-
+            draw_x += (self.width - text_w) // 2
         elif self._align == self.RIGHT:
-            x += (self.width - text_w)
+            draw_x += (self.width - text_w)
 
-        y = self.absolute_y + ((self.height - text_h) // 2)
+        draw_y = self.absolute_y + ((self.height - text_h) // 2)
 
         # 3. Desenha o texto atualizado por cima da área limpa
         renderer.draw_text(
-            x=x,
-            y=y,
+            x=draw_x,
+            y=draw_y,
             text=self._text,
             color=self._color,
             font=self._font
