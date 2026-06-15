@@ -1,4 +1,6 @@
 import gc
+from connectivity.wifi import WLAN
+
 from cydgui.core.view import View
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
@@ -118,21 +120,19 @@ class HomeView(View):
         ssid = self.parameters.get("ssid", "-")
         ip = self.parameters.get("ip", "-")
         connected = (ip is not None and ip != "-")
+        
         status = "Connected" if connected else "Disconnected"
-
-        # -----------------------------------------------------
-        # WiFi Button
-        # -----------------------------------------------------
-        self.add(
-            Button(
-                x=10,
-                y=10,
-                width=80,
-                height=30,
-                text="WiFi",
-                on_press=self.on_settings
-            )
-        )
+        
+        if WLAN.isconnected():
+            
+            ssid = WLAN.config('ssid')
+            ip = WLAN.ifconfig()[0]
+            
+            status = "Connected" 
+        else:
+            ip = '-'
+            
+        
 
         # -----------------------------------------------------
         # Framework Title
@@ -171,8 +171,8 @@ class HomeView(View):
                 y=260,
                 width=120,
                 height=40,
-                text="Settings",
-                on_press=self.on_settings
+                text="terminal",
+                on_press=self.on_terminal
             )
         )
 
@@ -180,7 +180,7 @@ class HomeView(View):
     # Navigation
     # ---------------------------------------------------------
 
-    def on_settings(self, button):
+    def on_terminal(self, button):
         self.clear()
         gc.collect()
-        self.navigate("wifi_scan")
+        self.navigate("terminal")
