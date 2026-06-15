@@ -302,6 +302,13 @@ class VirtualKeyboard(Widget):
 
         if not self.visible:
             return
+        renderer.fill_rect(
+            self.absolute_x, 
+            self.absolute_y, 
+            self.width, 
+            self.height, 
+            self._bg
+        )
 
         if self._layout_dirty:
             self._build_layout()

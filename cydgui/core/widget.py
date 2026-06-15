@@ -301,7 +301,7 @@ class Widget:
         self._dirty = True
 
         if self._parent:
-            self._parent.invalidate()
+            self._parent.mark_child_dirty(self)
 
     def validate(self) -> None:
         """Mark widget as rendered."""

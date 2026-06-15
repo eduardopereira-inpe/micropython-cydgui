@@ -33,6 +33,13 @@ class Container(Widget):
         )
 
         self._children = []
+        self._dirty_children = set()
+
+    def mark_child_dirty(self, widget):
+        self._dirty_children.add(widget)
+
+        if self._parent:
+            self._parent.mark_child_dirty(self)
 
     # ------------------------------------------------------------------
     # Child management
@@ -83,25 +90,24 @@ class Container(Widget):
     # ------------------------------------------------------------------
 
     def draw(self, renderer) -> None:
-        """Draw container and all visible children."""
-
+        """Draw container and only dirty or necessary visible children."""
         if not self.visible:
             return
 
-        #
-        # When container becomes dirty,
-        # redraw entire subtree.
-        #
-
         for child in self._children:
-
             if not child.visible:
                 continue
 
-            if hasattr(child, 'renderer'):
-                child.set_renderer(renderer)
+            if not child.dirty:
+                continue
 
-            child.draw(renderer)
+            # Só desenha se o filho estiver marcado como dirty 
+            # OU se o próprio container pai foi totalmente invalidado
+            if child.dirty or self.dirty:
+                if hasattr(child, 'renderer'):
+                    child.set_renderer(renderer)
+                
+                child.draw(renderer)
 
         self.validate()
 

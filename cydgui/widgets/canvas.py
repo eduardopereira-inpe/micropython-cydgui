@@ -75,6 +75,15 @@ class Canvas(Widget):
         """Método principal chamado pelo Container para desenhar o Widget."""
         if not self.visible:
             return
+        
+        # 1. Limpa APENAS a área deste widget usando a cor de fundo definida
+        renderer.fill_rect(
+            self.absolute_x, 
+            self.absolute_y, 
+            self.width, 
+            self.height, 
+            self._bg
+        )
 
         # Garante o sincronismo do renderer local
         self._renderer = renderer

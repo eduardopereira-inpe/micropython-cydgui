@@ -48,22 +48,41 @@ class App:
 
         self._renderer = renderer
         self._touch = touch
-
         self._frame_delay_ms = frame_delay_ms
 
         self._navigation = Navigation()
 
         self._running = False
-
         self._pressed = False
 
         self._last_x = 0
         self._last_y = 0
-        
+
         self._routes = {}
+
+        # NEW: managed async tasks
+        self._tasks = set()
 
         if screen is not None:
             self.set_screen(screen)
+
+    # ---------------------------------------------------------
+    # Task management
+    # ---------------------------------------------------------
+
+    def create_task(self, coro):
+        """Register a managed asyncio task.
+
+        Args:
+            coro: Coroutine to run.
+        """
+        task = asyncio.create_task(coro)
+        self._tasks.add(task)
+        return task
+
+    def _cleanup_tasks(self):
+        """Remove finished tasks."""
+        self._tasks = {t for t in self._tasks if not t.done()}
 
     # ------------------------------------------------------------------
     # Navigation
@@ -216,23 +235,15 @@ class App:
 
             screen = self.screen
 
-            if (
-                event is not None and
-                screen is not None
-            ):
+            if event is not None and screen is not None:
                 screen.dispatch_touch(event)
 
             self._render()
 
-            try:
-                await asyncio.sleep_ms(
-                    self._frame_delay_ms
-                )
-            except AttributeError:
-                await asyncio.sleep(
-                    self._frame_delay_ms / 1000
-                )
+            # NEW: cleanup finished UI tasks
+            self._cleanup_tasks()
 
+            await asyncio.sleep_ms(self._frame_delay_ms)
     # ------------------------------------------------------------------
     # Control
     # ------------------------------------------------------------------

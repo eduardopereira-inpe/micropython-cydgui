@@ -7,12 +7,13 @@ from cydgui.widgets.button import Button
 from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.widgets.textbox import TextBox
-from cydgui.widgets.clock_widget import ClockWidget
-
 
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
+from cydgui.widgets.clock_widget import ClockWidget
+
+import uasyncio as asyncio
 
 class TerminalView(View):
     """Simple terminal application."""
@@ -21,7 +22,7 @@ class TerminalView(View):
 
     def __init__(self, app, parameters=None):
         self.lines = []
-        
+
         super().__init__(
             app,
             "terminal",
@@ -52,24 +53,22 @@ class TerminalView(View):
             Label(
                 x=0,
                 y=10,
-                width=Constants.DISPLAY_WIDTH - 50,
+                width=Constants.DISPLAY_WIDTH,
                 height=20,
                 text="Terminal",
                 align=Label.CENTER
             )
         )
-        
+
         self.clock = ClockWidget(
             x=Constants.DISPLAY_WIDTH - 90,
             y=10,
             width=80,
             height=20
         )
-        self.app.create_task(self.clock.start())
-
 
         self.add(self.clock)
-   
+        asyncio.create_task(self.clock.start())
 
         # -----------------------------------------------------
         # Terminal output
@@ -100,6 +99,7 @@ class TerminalView(View):
         )
         
         self.textbox.set_text("")
+
 
         self.add(self.textbox)
 
