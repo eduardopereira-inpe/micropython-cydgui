@@ -8,6 +8,7 @@ from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.widgets.textbox import TextBox
 from cydgui.widgets.clock_widget import ClockWidget
+from cydgui.widgets.memory_graph import MemoryGraphWidget
 
 
 from cydgui.utils.constants import Constants
@@ -17,64 +18,54 @@ from cydgui.utils.colors import Colors
 class TerminalView(View):
     """Simple terminal application."""
 
-    MAX_LINES = 10
+    MAX_LINES = 5
 
     def __init__(self, app, parameters=None):
         self.lines = []
-        
-        
-        super().__init__(
-            app,
-            "terminal",
-            parameters
-        )
+        super().__init__(app, "terminal", parameters)
 
     # ---------------------------------------------------------
-    # Build
+    # BUILD
     # ---------------------------------------------------------
 
     def build(self):
 
-        if self.parameters is None:
-            self.parameters = {}
+        self.parameters = self.parameters or {}
 
-        self.add(
-            Button(
-                x=10,
-                y=10,
-                width=20,
-                height=20,
-                text="<",
-                on_press=self.on_back
-            )
-        )
+        # -----------------------------------------------------
+        # HEADER (fixo e leve)
+        # -----------------------------------------------------
 
-        self.add(
-            Label(
-                x=0,
-                y=10,
-                width=Constants.DISPLAY_WIDTH - 50,
-                height=20,
-                text="Terminal",
-                align=Label.CENTER
-            )
-        )
-        
+        self.add(Button(
+            x=10,
+            y=10,
+            width=25,
+            height=20,
+            text="<",
+            on_press=self.on_back
+        ))
+
+        self.add(Label(
+            x=0,
+            y=10,
+            width=Constants.DISPLAY_WIDTH,
+            height=20,
+            text="Terminal",
+            align=Label.CENTER
+        ))
+
         self.clock = ClockWidget(
-            x=Constants.DISPLAY_WIDTH - 90,
+            x=Constants.DISPLAY_WIDTH - 85,
             y=10,
             width=80,
             height=20
         )
-        
+
         self._clock_task = self.app.create_task(self.clock.start())
-
-
         self.add(self.clock)
-   
 
         # -----------------------------------------------------
-        # Terminal output
+        # TERMINAL OUTPUT (MAIOR PRIORIDADE)
         # -----------------------------------------------------
 
         self.canvas = Canvas(
@@ -91,7 +82,7 @@ class TerminalView(View):
         self.add(self.canvas)
 
         # -----------------------------------------------------
-        # Command input
+        # INPUT (MAIS RESPIRADO)
         # -----------------------------------------------------
 
         self.textbox = TextBox(
@@ -100,29 +91,25 @@ class TerminalView(View):
             width=Constants.DISPLAY_WIDTH - 20,
             height=28
         )
-        
-        self.textbox.set_text("")
 
+        self.textbox.set_text("")
         self.add(self.textbox)
 
         # -----------------------------------------------------
-        # Virtual keyboard
+        # KEYBOARD (FIXO, SEM COMPETIÇÃO VISUAL)
         # -----------------------------------------------------
 
         self.keyboard = VirtualKeyboard(
             x=10,
-            y=188,
+            y=190,
             width=Constants.DISPLAY_WIDTH - 20,
-            height=122,
+            height=120,
             on_key=self.on_key
         )
 
         self.add(self.keyboard)
 
-        # -----------------------------------------------------
-        # Startup messages
-        # -----------------------------------------------------
-
+        # boot
         self.println("CYD Terminal")
         self.println("Type 'help'")
         self.println("")

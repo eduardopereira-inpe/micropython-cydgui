@@ -8,11 +8,16 @@ class AsyncWidget(Widget):
     """
 
     # Aceita kwargs para repassar x, y, width, height para o Widget
-    def __init__(self, interval_ms=1000, **kwargs):
+    def __init__(self, interval_ms=1000, verbose=False, **kwargs):
         super().__init__(**kwargs)
         self.interval_ms = interval_ms
         self._running = False
         self._task = None
+        self.verbose = verbose
+
+    def _log(self, msg):
+        if self.verbose:
+            print("[AsyncWidget]", msg)
 
     async def start(self):
         """Start async loop gracefully directly in the current task."""
@@ -30,7 +35,11 @@ class AsyncWidget(Widget):
     async def _loop(self):
         """Internal loop."""
         while self._running:
-            await self.update_async()
+            try:
+                await self.update_async()
+            except Exception as e:
+                self._log("error: {}".format(e))
+
             self.invalidate()
             await asyncio.sleep_ms(self.interval_ms)
 

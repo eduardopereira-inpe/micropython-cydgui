@@ -4,8 +4,15 @@ from connectivity.wifi import WLAN
 from cydgui.core.view import View
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
+from cydgui.widgets.memory_graph import MemoryGraphWidget
 from cydgui.widgets.canvas import Canvas
-from cydgui.widgets.asynccanvas import AsyncCanvas
+from cydgui.utils.constants import Constants
+from cydgui.utils.colors import Colors
+
+
+# ---------------------------------------------------------
+# Logo (mantido, mas agora usando Colors)
+# ---------------------------------------------------------
 
 def create_logo(logo: AsyncCanvas):
     """
@@ -103,90 +110,144 @@ def create_logo(logo: AsyncCanvas):
     logo.draw_text(4, 4, "CYD", YELLOW)
     logo.draw_text(104, 4, "GUI", CYAN)
 
+# ---------------------------------------------------------
+# Home
+# ---------------------------------------------------------
 
 class HomeView(View):
-    """Application home screen."""
 
     def __init__(self, app, parameters=None):
         super().__init__(app, "home", parameters)
 
-    # ---------------------------------------------------------
-    # Build
-    # ---------------------------------------------------------
-
     def build(self):
-        if self.parameters is None:
-            self.parameters = {}
+
+        self.parameters = self.parameters or {}
 
         ssid = self.parameters.get("ssid", "-")
         ip = self.parameters.get("ip", "-")
-        connected = (ip is not None and ip != "-")
-        
-        status = "Connected" if connected else "Disconnected"
-        
+
         if WLAN.isconnected():
-            
-            ssid = WLAN.config('ssid')
+            ssid = WLAN.config("ssid")
             ip = WLAN.ifconfig()[0]
-            
-            status = "Connected" 
+            status = "CONNECTED"
+            status_color = Colors.SUCCESS
         else:
-            ip = '-'
-            
-        
+            status = "OFFLINE"
+            status_color = Colors.ERROR
+            ip = "-"
 
         # -----------------------------------------------------
-        # Framework Title
+        # HEADER (mais “app-like”)
         # -----------------------------------------------------
-        self.add(Label(x=0, y=15, width=240, height=20, text="CYDGUI", align=Label.CENTER))
-        self.add(Label(x=0, y=38, width=240, height=20, text="Embedded UI Framework", align=Label.CENTER))
+
+        self.add(Label(
+            x=0, y=10, width=240, height=20,
+            text="CYDGUI",
+            align=Label.CENTER
+        ))
+
+        self.add(Label(
+            x=0, y=28, width=240, height=20,
+            text="Embedded Dashboard",
+            align=Label.CENTER
+        ))
+
+        # separador visual
+        self.add(Label(
+            x=20, y=48, width=200, height=1,
+            text="",
+            align=Label.LEFT
+        ))
 
         # -----------------------------------------------------
-        # Logo Canvas (Configurado com o Callback)
+        # LOGO (mais central e “leve”)
         # -----------------------------------------------------
-        self.logo = AsyncCanvas(
+
+        self.logo = Canvas(
             x=55,
-            y=65,
+            y=55,
             width=130,
-            height=90,
-            bg=0x0000,
+            height=75,
+            bg=Colors.BLACK,
             touchable=False,
-            on_draw=create_logo  # <--- Injeta a função de desenho aqui!
+            on_draw=create_logo
         )
-        
-        
-#         task = create_logo(self.logo)
-#         
-#         
-#         self._canvas_task = self.app.create_task(self.logo.start())
 
-        self.add(self.logo)  # O Container vai gerenciar e disparar o desenho no tempo correto
-        
+        self.add(self.logo)
 
         # -----------------------------------------------------
-        # Connection Information
+        # STATUS CARD (novo foco visual)
         # -----------------------------------------------------
-        self.add(Label(x=20, y=165, width=200, height=20, text="Status: {}".format(status), align=Label.LEFT))
-        self.add(Label(x=20, y=190, width=200, height=20, text="SSID: {}".format(ssid), align=Label.LEFT))
-        self.add(Label(x=20, y=215, width=200, height=20, text="IP: {}".format(ip), align=Label.LEFT))
+
+        self.add(Label(
+            x=20, y=145, width=200, height=20,
+            text=f"STATUS: {status}",
+            color=status_color,
+            align=Label.LEFT
+        ))
+
+        self.add(Label(
+            x=20, y=160, width=200, height=20,
+            text=f"SSID: {ssid}",
+            align=Label.LEFT
+        ))
+
+        self.add(Label(
+            x=20, y=180, width=200, height=20,
+            text=f"IP: {ip}",
+            align=Label.LEFT
+        ))
 
         # -----------------------------------------------------
-        # Main Action
+        # MEMORY GRAPH (mais protagonista)
         # -----------------------------------------------------
+
+        self.graph = MemoryGraphWidget(
+            x=20,
+            y=205,
+            width=200,
+            height=45,
+            bg=Colors.BLACK,
+            border_color=Colors.DARK_GRAY,
+            interval_ms=5000
+        )
+
+        self._graph_task = self.app.create_task(self.graph.start())
+        self.add(self.graph)
+
+        # -----------------------------------------------------
+        # BUTTON (menor e menos agressivo visualmente)
+        # -----------------------------------------------------
+
         self.add(
             Button(
-                x=60,
-                y=260,
-                width=120,
-                height=40,
+                x=10,
+                y=265,
+                width=105,
+                height=30,
                 text="terminal",
                 on_press=self.on_terminal
             )
         )
 
+        self.add(
+            Button(
+                x=125,
+                y=265,
+                width=105,
+                height=30,
+                text="memory",
+                on_press=self.on_memory
+            )
+        )
     # ---------------------------------------------------------
-    # Navigation
+    # NAV
     # ---------------------------------------------------------
+    
+    def on_memory(self, button):
+        self.clear()
+        gc.collect()
+        self.navigate("memory_graph")
 
     def on_terminal(self, button):
         self.clear()

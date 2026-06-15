@@ -606,6 +606,8 @@ class Display(object):
             background (int): RGB565 background color (default: black).
             rotate(int): 0, 90, 180, 270
         """
+        if not text:
+            return
         w = len(text) * 8
         h = 8
         # Confirm coordinates in boundary
