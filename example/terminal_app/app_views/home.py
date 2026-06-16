@@ -2,6 +2,7 @@ import gc
 from connectivity.wifi import WLAN
 
 from cydgui.core.view import View
+from cydgui.widgets.async_canvas import AsyncCanvas
 from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.memory_graph import MemoryGraphWidget
@@ -9,7 +10,10 @@ from cydgui.widgets.canvas import Canvas
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
+from udotenv.dotenv import load_dotenv
 
+config = load_dotenv("env.txt")
+API_KEY = config.get("API_OPENWEATHER")
 # ---------------------------------------------------------
 # Logo (mantido, mas agora usando Colors)
 # ---------------------------------------------------------
@@ -219,36 +223,51 @@ class HomeView(View):
         # BUTTON (menor e menos agressivo visualmente)
         # -----------------------------------------------------
 
-        self.add(
-                    Button(
-                        x=10,
-                        y=265,
-                        width=70,
-                        height=30,
-                        text="term",
-                        on_press=self.on_terminal
-                    )
-                )
+# -----------------------------------------------------
+        # BUTTONS (Ajustados para caber em tela de 240px de largura)
+        # -----------------------------------------------------
 
         self.add(
             Button(
-                x=85,  # 10 (margem) + 70 (botão 1) + 5 (espaço)
+                x=10,
                 y=265,
-                width=70,
+                width=50,  # Reduzido de 70 para 50
                 height=30,
-                text="mem",
+                text="TER",
+                on_press=self.on_terminal
+            )
+        )
+
+        self.add(
+            Button(
+                x=65,      # 10 (x anterior) + 50 (largura) + 5 (espaço)
+                y=265,
+                width=50,
+                height=30,
+                text="MEM",
                 on_press=self.on_memory
             )
         )
 
         self.add(
             Button(
-                x=160, # 85 (x anterior) + 70 (botão 2) + 5 (espaço)
+                x=120,     # 65 (x anterior) + 50 (largura) + 5 (espaço)
                 y=265,
-                width=70,
+                width=50,
                 height=30,
-                text="speed",
+                text="SPD",
                 on_press=self.on_speedometer
+            )
+        )
+
+        self.add(
+            Button(
+                x=175,     # 120 (x anterior) + 50 (largura) + 5 (espaço)
+                y=265,
+                width=50,
+                height=30,
+                text="WT",
+                on_press=self.on_weather
             )
         )
     # ---------------------------------------------------------
@@ -268,3 +287,12 @@ class HomeView(View):
     def on_terminal(self, button):
         gc.collect()
         self.navigate("terminal")
+        
+    def on_weather(self, button):  
+        parametros_clima = {       
+                "api_key": API_KEY
+            }
+            
+        
+        # O nome aqui deve ser o mesmo usado no __init__ da sua WeatherView
+        self.navigate("weather_dashboard", parameters=parametros_clima)
