@@ -226,6 +226,8 @@ class App:
 
     async def _run_async(self) -> None:
         """Application async loop."""
+        
+        print(self._touch)
 
         self._running = True
 
@@ -290,3 +292,4 @@ class App:
             f"screen={self.screen}, "
             f"running={self._running})"
         )
+    

@@ -23,6 +23,7 @@ from udotenv.dotenv import load_dotenv
 
 import urequests
 import uasyncio as asyncio
+from cydgui.utils.constants import Constants
 
 
 config = load_dotenv("env.txt")
@@ -46,7 +47,20 @@ gc.collect()
 # Hardware
 # ============================================================
 
-tft_touch = TFTTouch()
+tft_touch = TFTTouch(
+    disp_sck=12,
+    disp_mosi=11,
+    disp_miso=13,
+    # Pinos de Controle Individuais
+    disp_cs=10,
+    disp_dc=5,
+    disp_rst=4,
+    disp_bl=21,
+    touch_cs=9,
+    touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
+)
+
+
 display = tft_touch.display
 touch = tft_touch.touch
 

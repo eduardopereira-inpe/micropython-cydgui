@@ -18,6 +18,7 @@ class Constants:
 
     DISPLAY_WIDTH = 240
     DISPLAY_HEIGHT = 320
+    DISPLAY_ROTATION = 0
 
     # ---------------------------------------------------------
     # Font metrics
@@ -169,4 +170,3 @@ class Constants:
 
     TOUCH_INVERT_X = True
     TOUCH_INVERT_Y = False
-    DISPLAY_ROTATION = 90
