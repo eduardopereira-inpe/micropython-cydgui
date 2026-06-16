@@ -58,6 +58,10 @@ class Label(Widget):
     def font(self):
         """Return font."""
         return self._font
+    
+    @text.setter
+    def text(self, txt):
+        self.set_text(txt)
 
     # ------------------------------------------------------------------
     # State
