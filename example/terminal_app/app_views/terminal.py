@@ -14,7 +14,6 @@ from cydgui.widgets.memory_graph import MemoryGraphWidget
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
-import uasyncio as asyncio
 
 class TerminalView(View):
     """Simple terminal application."""
