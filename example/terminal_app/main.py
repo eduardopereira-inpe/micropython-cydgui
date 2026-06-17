@@ -34,17 +34,17 @@ from cydgui.utils.tools import get_lat_lon_from_my_ip
 # ============================================================
 
 tft_touch = TFTTouch(
-    disp_sck=12,
-    disp_mosi=11,
-    disp_miso=13,
-    
-    # Pinos de Controle Individuais
-    disp_cs=10,
-    disp_dc=5,
-    disp_rst=4,
-    disp_bl=21,
-    touch_cs=41,
-    touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
+#     disp_sck=12,
+#     disp_mosi=11,
+#     disp_miso=13,
+#     
+#     # Pinos de Controle Individuais
+#     disp_cs=10,
+#     disp_dc=5,
+#     disp_rst=4,
+#     disp_bl=21,
+#     touch_cs=41,
+#     touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
 )
 
 
