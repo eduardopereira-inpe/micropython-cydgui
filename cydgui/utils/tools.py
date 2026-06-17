@@ -84,6 +84,8 @@ def get_weather_by_coords(lat, lon, api_key):
         # URL da OpenWeatherMap usando lat e lon em vez de nome da cidade
         url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=pt_br"
         
+        print(url)
+        
         response = urequests.get(url)
 
         

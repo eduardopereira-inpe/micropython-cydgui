@@ -122,6 +122,9 @@ class HomeView(View):
 
     def __init__(self, app, parameters=None):
         super().__init__(app, "home", parameters)
+        
+       
+        
 
     def build(self):
 
@@ -270,6 +273,13 @@ class HomeView(View):
                 on_press=self.on_weather
             )
         )
+        
+        parametros_clima = {       
+        "api_key": API_KEY
+        }
+            
+        
+
     # ---------------------------------------------------------
     # NAV
     # ---------------------------------------------------------

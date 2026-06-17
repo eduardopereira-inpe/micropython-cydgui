@@ -17,19 +17,19 @@ class ClockWidget(AsyncWidget):
                  font=None,
                  align: int = LEFT):
 
-        # Repassa a geometria inteira para o AsyncWidget (que mandará para o Widget)
-        super().__init__(
-            interval_ms=1000,
-            x=x, y=y, width=width, height=height
-        )
-
+        
         self._text = "00:00:00"
         self._color = color
         self._bg_color = bg_color 
         self._font = font
         self._align = align
         
-        super().__init__(interval_ms=1000)
+        super().__init__(
+            interval_ms=1000,
+            x=x, y=y, width=width, height=height
+        )
+
+        
 
     async def update_async(self):
         """Atualiza apenas o texto periodicamente."""

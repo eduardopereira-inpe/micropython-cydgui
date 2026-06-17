@@ -19,7 +19,7 @@ from app_views.terminal import TerminalView
 from app_views.memory_graph import MemoryGraphView
 from app_views.speeddometer import SpeedometerView
 from app_views.weather import WeatherView
-
+from app_views.vboot import BootView
 from udotenv.dotenv import load_dotenv
 
 import urequests
@@ -28,30 +28,6 @@ import ujson
 import uasyncio as asyncio
 from cydgui.utils.tools import get_lat_lon_from_my_ip
 
-config = load_dotenv("env.txt")
-
-API_KEY = config.get("API_KEY")
-SSID = config.get("WIFI_SSID")
-PASSWORD = config.get("WIFI_PASS")
-API_OPENWEATHER = config.get("API_OPENWEATHER")
-
-connect_to_wifi(ssid=SSID, password=PASSWORD, verbose=True)
-
-
-ip, mascara, gateway, dns_antigo = WLAN.ifconfig()
-
-# Forçamos a placa a usar o mesmo IP/Gateway, mas com o DNS público do Google (8.8.8.8)
-WLAN.ifconfig((ip, mascara, gateway, '8.8.8.8'))
-
-
-if WLAN.isconnected():
-
-    ip = WLAN.ifconfig()[0]
-else:
-    ip = '-'
-
-
-gc.collect()
 
 # ============================================================
 # Hardware
@@ -61,12 +37,13 @@ tft_touch = TFTTouch(
     disp_sck=12,
     disp_mosi=11,
     disp_miso=13,
+    
     # Pinos de Controle Individuais
     disp_cs=10,
     disp_dc=5,
     disp_rst=4,
     disp_bl=21,
-    touch_cs=9,
+    touch_cs=41,
     touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
 )
 
@@ -87,18 +64,14 @@ app = App(
     touch=touch
 )
 
+app.route("boot", BootView)
 app.route("home", HomeView)
 app.route("terminal", TerminalView)
 app.route("memory_graph", MemoryGraphView)
 app.route("speedometer", SpeedometerView)
 app.route("weather_dashboard", WeatherView)
-app.navigate("home", parameters={"ssid": SSID, "ip": ip })
 
-gc.collect()
-lat_lon = get_lat_lon_from_my_ip()
-print(lat_lon)
-del lat_lon
-gc.collect()
 
+app.navigate("boot")
     
 app.run()

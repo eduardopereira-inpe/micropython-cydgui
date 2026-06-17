@@ -165,6 +165,9 @@ class ILI9341Renderer(Renderer):
         h: int,
         color: int
     ) -> None:
+        
+        if w <= 0 or h <= 0:
+            return
 
         self._driver.fill_vrect(
             x,

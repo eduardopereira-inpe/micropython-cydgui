@@ -31,11 +31,11 @@ class WeatherView(View):
         self.api_key = self.parameters.get("api_key", "SUA_CHAVE_AQUI")
 
         # -----------------------------------------------------
-        # HEADER
+        # HEADER (Ajustado para tela de 240px de largura)
         # -----------------------------------------------------
 
         self.add(Button(
-            x=10,
+            x=5,
             y=10,
             width=25,
             height=20,
@@ -43,19 +43,22 @@ class WeatherView(View):
             on_press=self.on_back
         ))
 
+        # Diminuímos a largura do Label central para não sobrepor o relógio
         self.add(Label(
-            x=40,
+            x=35,
             y=10,
-            width=Constants.DISPLAY_WIDTH - 130,
+            width=110,
             height=20,
             text="Tempo",
             align=Label.CENTER
         ))
 
+        # Mudamos o Relógio para coordenadas fixas e seguras,
+        # com largura suficiente para evitar divisões por zero na fonte.
         self.clock = ClockWidget(
-            x=Constants.DISPLAY_WIDTH - 85,
+            x=150,
             y=10,
-            width=80,
+            width=85,
             height=20
         )
 
@@ -67,7 +70,7 @@ class WeatherView(View):
         # -----------------------------------------------------
         
         w_width = 240
-        w_height = 150
+        w_height = 160
         w_x = int((Constants.DISPLAY_WIDTH - w_width) / 2)
 
         # Iniciamos o widget com uma localização genérica. 
