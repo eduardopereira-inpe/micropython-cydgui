@@ -1,69 +1,65 @@
 from cydgui.driver.ili9341 import Display
 from cydgui.driver.xpt2046 import Touch
 from machine import Pin, SPI
+
 import uasyncio as asyncio
+
 from cydgui.utils.constants import Constants
 
+
 class TFTTouch:
-    def __init__(self,
-                 # Barramento SPI Compartilhado (Padrão para ESP32-S3)
-                 disp_sck=12,
-                 disp_mosi=11,
-                 disp_miso=13,
-                 # Pinos de Controle Individuais
-                 disp_cs=10,
-                 disp_dc=5,
-                 disp_rst=4,
-                 disp_bl=21,
-                 touch_cs=9,
-                 touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
+    def __init__(self, 
+                 display_width=Constants.DISPLAY_WIDTH, 
+                 display_height=Constants.DISPLAY_HEIGHT
                  ):
-        
-        # 1. Criação do barramento SPI único e compartilhado por Hardware (SPI 1)
-        # O ESP32-S3 gerencia as velocidades diferentes automaticamente por dispositivo
-        self._shared_spi = SPI(
+        # SPI for display
+        self._hspi = SPI(
             1,
-            baudrate=20000000, # 20MHz para escrita fluida no vídeo
-            sck=Pin(disp_sck),
-            mosi=Pin(disp_mosi),
-            miso=Pin(disp_miso)
+            baudrate=40000000,
+            sck=Pin(14),
+            mosi=Pin(13),
+            miso=Pin(12)
         )
 
-        # 2. Inicialização do Display (ILI9341) usando o SPI compartilhado
         self._display = Display(
-            self._shared_spi,
-            cs=Pin(disp_cs, Pin.OUT),
-            dc=Pin(disp_dc, Pin.OUT),
-            rst=Pin(disp_rst, Pin.OUT),
-            width=Constants.DISPLAY_WIDTH,
+            self._hspi, 
+            cs=Pin(15, Pin.OUT),
+            dc=Pin(2, Pin.OUT),
+            rst=Pin(27, Pin.OUT),
+            width=Constants.DISPLAY_WIDTH, 
             height=Constants.DISPLAY_HEIGHT,
             rotation=Constants.DISPLAY_ROTATION
         )
 
         # Backlight
-        tft_bl = Pin(disp_bl, Pin.OUT)
-        tft_bl.value(1) # Liga a luz de fundo
+        tft_bl = Pin(21, Pin.OUT)
+        tft_bl.value(1) #Turn on backlight
 
-        # Inicializa variável necessária para o método double_tap não quebrar no primeiro clique
-        self.last_tap = (-1, -1)
+        # Touch
+        self._sspi = SPI(
+            2,
+            baudrate=1000000,
+            sck=Pin(25),
+            mosi=Pin(32),
+            miso=Pin(39)
+        )
 
         self._touch_event = asyncio.Event()
         self._touch_queue = []
-        self.display_width = Constants.DISPLAY_WIDTH
-        self.display_height = Constants.DISPLAY_HEIGHT
+        self.display_width = display_width
+        self.display_height = display_height
 
-        # 3. Inicialização do Touch (XPT2046) usando o MESMO SPI compartilhado
-        # Nota: O driver interno do XPT2046 reduz temporariamente o baudrate para ~2.5MHz durante a leitura
         self._touch = Touch(
-            self._shared_spi,
-            cs=Pin(touch_cs, Pin.OUT),
+            self._sspi,
+            cs=Pin(33, Pin.OUT),
             width=Constants.DISPLAY_WIDTH,
             height=Constants.DISPLAY_HEIGHT,
-            int_pin=Pin(touch_int),
+            int_pin=Pin(36), 
             int_handler=self._touch_handler,
             invert_x=Constants.TOUCH_INVERT_X,
             invert_y=Constants.TOUCH_INVERT_Y,
         )
+
 
     def __call__(self, x, y):
         self.last_tap = (x, y)
@@ -98,20 +94,26 @@ class TFTTouch:
     def touches(self):
         if self._touch_queue:
             return self._touch_queue.pop(0)
+
         return None
 
     async def wait_touch(self):
         """
         Aguarda proximo toque.
         """
+
         while not self._touch_queue:
+
             self._touch_event.clear()
+
             await self._touch_event.wait()
 
         return self._touch_queue.pop(0)
 
     async def touch_stream(self):
+
         while True:
+
             yield await self.wait_touch()
 
     def double_tap(self, x, y, error_margin = 10):
@@ -129,3 +131,5 @@ class TFTTouch:
                 return True
         self.last_tap = (x,y)
         return False
+
+
