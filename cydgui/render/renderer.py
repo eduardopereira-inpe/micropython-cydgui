@@ -162,6 +162,37 @@ class Renderer:
     ) -> None:
         """Draw filled rounded rectangle."""
         raise NotImplementedError
+    
+    def draw_ellipse(
+        self,
+        x: int,
+        y: int,
+        rx: int,
+        ry: int,
+        color: int
+    ):
+        raise NotImplementedError()
+
+
+    def fill_ellipse(
+        self,
+        x: int,
+        y: int,
+        rx: int,
+        ry: int,
+        color: int
+    ):
+        raise NotImplementedError()
+
+
+    def fill_diamond(
+        self,
+        x: int,
+        y: int,
+        radius: int,
+        color: int
+    ):
+        raise NotImplementedError()
 
     # ------------------------------------------------------------------
     # Text

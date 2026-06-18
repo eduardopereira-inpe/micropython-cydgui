@@ -372,3 +372,164 @@ class ILI9341Renderer(Renderer):
     def clear_clip(self) -> None:
 
         super().clear_clip()
+
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Ellipse
+    # ------------------------------------------------------------------
+
+    def fill_ellipse(
+        self,
+        cx: int,
+        cy: int,
+        rx: int,
+        ry: int,
+        color: int
+    ) -> None:
+
+        if rx <= 0 or ry <= 0:
+            return
+
+        rx2 = rx * rx
+        ry2 = ry * ry
+
+        for yy in range(-ry, ry + 1):
+
+            y2 = yy * yy
+
+            try:
+
+                span = int(
+                    rx *
+                    ((1.0 - (y2 / ry2)) ** 0.5)
+                )
+
+            except Exception:
+
+                continue
+
+            self.draw_line(
+                cx - span,
+                cy + yy,
+                cx + span,
+                cy + yy,
+                color
+            )
+
+
+    def draw_ellipse(
+        self,
+        cx: int,
+        cy: int,
+        rx: int,
+        ry: int,
+        color: int
+    ) -> None:
+
+        if rx <= 0 or ry <= 0:
+            return
+
+        prev_x = None
+        prev_y = None
+
+        for deg in range(361):
+
+            rad = math.radians(deg)
+
+            x = cx + int(rx * math.cos(rad))
+            y = cy + int(ry * math.sin(rad))
+
+            if prev_x is not None:
+
+                self.draw_line(
+                    prev_x,
+                    prev_y,
+                    x,
+                    y,
+                    color
+                )
+
+            prev_x = x
+            prev_y = y
+
+
+    # ------------------------------------------------------------------
+    # Diamond
+    # ------------------------------------------------------------------
+
+    def fill_diamond(
+        self,
+        cx: int,
+        cy: int,
+        radius: int,
+        color: int
+    ) -> None:
+
+        if radius <= 0:
+            return
+
+        for i in range(radius + 1):
+
+            w = radius - i
+
+            self.draw_line(
+                cx - w,
+                cy - i,
+                cx + w,
+                cy - i,
+                color
+            )
+
+            if i > 0:
+
+                self.draw_line(
+                    cx - w,
+                    cy + i,
+                    cx + w,
+                    cy + i,
+                    color
+                )
+
+
+    def draw_diamond(
+        self,
+        cx: int,
+        cy: int,
+        radius: int,
+        color: int
+    ) -> None:
+
+        if radius <= 0:
+            return
+
+        self.draw_line(
+            cx,
+            cy - radius,
+            cx + radius,
+            cy,
+            color
+        )
+
+        self.draw_line(
+            cx + radius,
+            cy,
+            cx,
+            cy + radius,
+            color
+        )
+
+        self.draw_line(
+            cx,
+            cy + radius,
+            cx - radius,
+            cy,
+            color
+        )
+
+        self.draw_line(
+            cx - radius,
+            cy,
+            cx,
+            cy - radius,
+            color
+        )
