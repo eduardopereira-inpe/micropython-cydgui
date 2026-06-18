@@ -5,7 +5,8 @@ from cydgui.core.view import View
 from cydgui.widgets.button import Button
 from cydgui.widgets.label import Label
 from cydgui.widgets.clock_widget import ClockWidget
-from cydgui.widgets.weather import WeatherWidget 
+from cydgui.widgets.weather import WeatherWidget
+from cydgui.widgets.crypto import CryptoWidget
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
@@ -26,12 +27,12 @@ class WeatherView(View):
     # ---------------------------------------------------------
 
     def build(self):
+
         self.parameters = self.parameters or {}
-        
         self.api_key = self.parameters.get("api_key", "SUA_CHAVE_AQUI")
 
         # -----------------------------------------------------
-        # HEADER (Ajustado para tela de 240px de largura)
+        # HEADER
         # -----------------------------------------------------
 
         self.add(Button(
@@ -43,7 +44,6 @@ class WeatherView(View):
             on_press=self.on_back
         ))
 
-        # Diminuímos a largura do Label central para não sobrepor o relógio
         self.add(Label(
             x=35,
             y=10,
@@ -53,8 +53,6 @@ class WeatherView(View):
             align=Label.CENTER
         ))
 
-        # Mudamos o Relógio para coordenadas fixas e seguras,
-        # com largura suficiente para evitar divisões por zero na fonte.
         self.clock = ClockWidget(
             x=150,
             y=10,
@@ -66,36 +64,53 @@ class WeatherView(View):
         self.add(self.clock)
 
         # -----------------------------------------------------
-        # WEATHER WIDGET (Construído com valores padrão temporários)
+        # CRYPTO (MARKET STRIP)
         # -----------------------------------------------------
-        
+
+        crypto_width = 150
+        crypto_height = 28
+
+        self.crypto = CryptoWidget(
+            x=(Constants.DISPLAY_WIDTH - crypto_width) // 2,
+            y=38,
+            width=crypto_width,
+            height=crypto_height,
+            interval_minutes=5,
+            bg_color=0x1022  # leve destaque visual
+        )
+
+        self._crypto_task = self.app.create_task(self.crypto.start())
+        self.add(self.crypto)
+
+        # -----------------------------------------------------
+        # WEATHER
+        # -----------------------------------------------------
+
         w_width = 240
-        w_height = 160
+        w_height = 150
         w_x = int((Constants.DISPLAY_WIDTH - w_width) / 2)
 
-        # Iniciamos o widget com uma localização genérica. 
-        # A tarefa de startup vai alterar isso antes de iniciar o loop.
         self.weather = WeatherWidget(
             x=w_x,
-            y=50,
+            y=72,  # desce para acomodar crypto strip
             width=w_width,
             height=w_height,
-            lat=-23.2237, 
+            lat=-23.2237,
             lon=-45.9009,
             api_key=self.api_key,
-            bg_color=Colors.NAVY,     
-            interval_minutes=15       
+            bg_color=Colors.NAVY,
+            interval_minutes=15
         )
 
         self.add(self.weather)
 
         # -----------------------------------------------------
-        # INFO FOOTER
+        # FOOTER
         # -----------------------------------------------------
 
         self.info = Label(
             x=0,
-            y=210,
+            y=220,
             width=Constants.DISPLAY_WIDTH,
             height=20,
             text="Iniciando...",
@@ -104,7 +119,10 @@ class WeatherView(View):
 
         self.add(self.info)
 
-        # Inicia a rotina em segundo plano APÓS a tela ser desenhada
+        # -----------------------------------------------------
+        # STARTUP ASYNC
+        # -----------------------------------------------------
+
         self._startup_task = self.app.create_task(self._startup_routine())
 
     # ---------------------------------------------------------
@@ -139,6 +157,8 @@ class WeatherView(View):
 
         # 3. Agora sim, damos o start() no widget com as coordenadas corretas!
         self._weather_task = self.app.create_task(self.weather.start())
+        
+        self._crypto_task = self.app.create_task(self.crypto.start())
 
     # ---------------------------------------------------------
     # CLEANUP

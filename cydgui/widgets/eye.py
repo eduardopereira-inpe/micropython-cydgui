@@ -1,7 +1,7 @@
 import uasyncio as asyncio
 import urandom
 
-from async_canvas import AsyncCanvas
+from .async_canvas import AsyncCanvas
 
 
 class EyeWidget(AsyncCanvas):
@@ -175,14 +175,12 @@ class EyeWidget(AsyncCanvas):
 
         else:
 
-            pts = [
-                (iris_x, iris_y - pupil_r),
-                (iris_x + pupil_r, iris_y),
-                (iris_x, iris_y + pupil_r),
-                (iris_x - pupil_r, iris_y)
-            ]
-
-            r.fill_polygon(
-                pts,
+            r.fill_diamond(
+                iris_x,
+                iris_y,
+                pupil_r,
                 self.pupil_color
             )
+
+
+
