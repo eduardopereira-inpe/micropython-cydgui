@@ -17,6 +17,14 @@ class SpeedometerView(View):
     Gerencia o ciclo de vida do canvas assíncrono para evitar memory leaks.
     """
 
+    __slots__ = (
+        "clock",
+        "_clock_task",
+        "speedometer",
+        "_speed_task",
+        "info",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "speedometer_test", parameters)
 
@@ -119,13 +127,7 @@ class SpeedometerView(View):
                 pass
             self._clock_task = None
 
-        self.clear()
-
-        if self.parent:
-            try:
-                self.parent.remove(self)
-            except Exception:
-                pass
+        super().destroy()
 
         gc.collect()
 
@@ -134,5 +136,17 @@ class SpeedometerView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        self.destroy()
-        self.navigate("home")
+        app = self.app
+
+        try:
+            self.speedometer.stop()
+        except Exception:
+            pass
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
+
+        if app is not None:
+            app.navigate("home")

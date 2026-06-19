@@ -9,6 +9,13 @@ class SpeedometerWidget(AsyncCanvas):
     Visual aprimorado com ponteiro espesso, zonas de cor e eixo central.
     """
 
+    __slots__ = (
+        "min_val",
+        "max_val",
+        "value",
+        "_step",
+    )
+
     def __init__(self, min_val=0, max_val=100, interval_ms=50, **kwargs):
         super().__init__(interval_ms=interval_ms, **kwargs)
 

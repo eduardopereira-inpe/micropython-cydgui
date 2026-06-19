@@ -21,6 +21,8 @@ try:
 except ImportError:
     import asyncio
 
+import gc
+
 
 from cydgui.core.touch_event import TouchEvent
 from cydgui.core.navigation import Navigation
@@ -28,6 +30,19 @@ from cydgui.core.navigation import Navigation
 
 class App:
     """Main application object."""
+
+    __slots__ = (
+        "_renderer",
+        "_touch",
+        "_frame_delay_ms",
+        "_navigation",
+        "_running",
+        "_pressed",
+        "_last_x",
+        "_last_y",
+        "_routes",
+        "_tasks",
+    )
 
     def __init__(
         self,
@@ -105,13 +120,17 @@ class App:
             screen: Screen instance.
         """
 
-        self._navigation.clear()
+        self._navigation.clear(destroy=True)
+
+        gc.collect()
 
         if screen is not None:
 
             screen.app = self
 
             self._navigation.push(screen)
+
+            gc.collect()
 
     def push(
         self,
@@ -277,9 +296,17 @@ class App:
 
         view_class = self._routes[name]
 
-        self.set_screen(
-            view_class(self, parameters=parameters)
-        )
+        self._navigation.clear(destroy=True)
+
+        gc.collect()
+
+        screen = view_class(self, parameters=parameters)
+
+        screen.app = self
+
+        self._navigation.push(screen)
+
+        gc.collect()
 
     # ------------------------------------------------------------------
     # Debug

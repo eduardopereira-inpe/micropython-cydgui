@@ -7,6 +7,13 @@ class AsyncWidget(Widget):
     Designed for clocks, sensors, network status, etc.
     """
 
+    __slots__ = (
+        "interval_ms",
+        "_running",
+        "_task",
+        "verbose",
+    )
+
     # Aceita kwargs para repassar x, y, width, height para o Widget
     def __init__(self, interval_ms=1000, verbose=False, **kwargs):
         super().__init__(**kwargs)
@@ -27,7 +34,7 @@ class AsyncWidget(Widget):
         self._running = True
         await self._loop()
 
-    async def stop(self):
+    def stop(self):
         """Stop async loop."""
         self._running = False
         self._task = None
@@ -46,3 +53,10 @@ class AsyncWidget(Widget):
     async def update_async(self):
         """Override this method. Called periodically in async loop."""
         pass
+
+    def destroy(self) -> None:
+        """Stop the async loop and release widget references."""
+
+        self._running = False
+        self._task = None
+        super().destroy()

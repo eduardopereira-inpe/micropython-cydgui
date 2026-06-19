@@ -120,6 +120,12 @@ def create_logo(logo: AsyncCanvas):
 
 class HomeView(View):
 
+    __slots__ = (
+        "logo",
+        "graph",
+        "_graph_task",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "home", parameters)
         
@@ -277,6 +283,17 @@ class HomeView(View):
         parametros_clima = {       
         "api_key": API_KEY
         }
+
+    def destroy(self):
+
+        if hasattr(self, "_graph_task") and self._graph_task:
+            try:
+                self._graph_task.cancel()
+            except Exception:
+                pass
+            self._graph_task = None
+
+        super().destroy()
             
         
 

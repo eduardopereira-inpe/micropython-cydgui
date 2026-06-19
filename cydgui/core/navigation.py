@@ -21,6 +21,8 @@ from cydgui.core.screen import Screen
 class Navigation:
     """Screen navigation stack."""
 
+    __slots__ = ("_stack",)
+
     def __init__(self) -> None:
         """Initialize navigation."""
 
@@ -118,7 +120,7 @@ class Navigation:
 
         self.push(screen)
 
-    def clear(self) -> None:
+    def clear(self, destroy: bool = False) -> None:
         """Remove all screens."""
 
         while self._stack:
@@ -128,6 +130,23 @@ class Navigation:
                 screen.on_leave()
             except Exception:
                 pass
+
+            if destroy:
+                try:
+                    screen.destroy()
+                except Exception:
+                    pass
+
+    def replace_all(self, screen: Screen) -> None:
+        """Replace the full stack with a single active screen."""
+
+        self.clear(destroy=True)
+
+        if screen is None:
+            return
+
+        self._stack.append(screen)
+        screen.on_enter()
 
     # ------------------------------------------------------------------
     # Helpers

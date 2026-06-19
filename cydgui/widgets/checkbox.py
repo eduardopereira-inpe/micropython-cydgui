@@ -251,3 +251,7 @@ class Checkbox(Widget):
             f"checked={self._checked}, "
             f"text='{self._text}')"
         )
+
+    def destroy(self) -> None:
+        self._on_change = None
+        super().destroy()

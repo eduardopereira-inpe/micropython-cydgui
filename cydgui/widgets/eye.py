@@ -6,6 +6,19 @@ from .async_canvas import AsyncCanvas
 
 class EyeWidget(AsyncCanvas):
 
+    __slots__ = (
+        "iris_color",
+        "pupil_shape",
+        "sclera_color",
+        "pupil_color",
+        "blink_interval",
+        "eye_x",
+        "eye_y",
+        "max_offset",
+        "_blink",
+        "_next_blink",
+    )
+
     PUPIL_ROUND = "round"
     PUPIL_DIAMOND = "diamond"
 

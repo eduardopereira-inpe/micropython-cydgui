@@ -18,6 +18,15 @@ from cydgui.utils.colors import Colors
 class TerminalView(View):
     """Simple terminal application."""
 
+    __slots__ = (
+        "lines",
+        "clock",
+        "_clock_task",
+        "canvas",
+        "textbox",
+        "keyboard",
+    )
+
     MAX_LINES = 5
 
     def __init__(self, app, parameters=None):
@@ -132,14 +141,7 @@ class TerminalView(View):
         except:
             pass
 
-        # remove da árvore primeiro (quebra render graph)
-        if self.parent:
-            try:
-                self.parent.remove(self)
-            except:
-                pass
-
-        self.clear()
+        super().destroy()
 
     # ---------------------------------------------------------
     # Terminal output
@@ -293,9 +295,6 @@ class TerminalView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-
-        self.destroy()   # FIX: important cleanup
-
         gc.collect()
 
         self.navigate("home")

@@ -5,6 +5,14 @@ from cydgui.utils.colors import Colors
 class ClockWidget(AsyncWidget):
     """Live clock widget updated asynchronously."""
 
+    __slots__ = (
+        "_text",
+        "_color",
+        "_bg_color",
+        "_font",
+        "_align",
+    )
+
     LEFT = 0
     CENTER = 1
     RIGHT = 2

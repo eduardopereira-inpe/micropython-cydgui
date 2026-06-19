@@ -22,6 +22,23 @@ from cydgui.core.touch_event import TouchEvent
 class VirtualKeyboard(Widget):
     """Modern on-screen virtual keyboard."""
 
+    __slots__ = (
+        "_on_key",
+        "_bg",
+        "_key_bg",
+        "_key_color",
+        "_accent",
+        "_border_color",
+        "_shadow_color",
+        "_shift_active",
+        "_radius",
+        "_shift",
+        "_numeric",
+        "ROWS",
+        "_keys",
+        "_layout_dirty",
+    )
+
     ROWS_ALPHA = [
         list("QWERTYUIOP"),
         list("ASDFGHJKL"),
@@ -442,3 +459,8 @@ class VirtualKeyboard(Widget):
             f"shift={self._shift}, "
             f"numeric={self._numeric})"
         )
+
+    def destroy(self) -> None:
+        self._on_key = None
+        self._keys = []
+        super().destroy()

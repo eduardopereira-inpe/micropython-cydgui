@@ -16,6 +16,16 @@ from cydgui.core.widget import Widget
 class Button(Widget):
     """Clickable button widget."""
 
+    __slots__ = (
+        "_text",
+        "_on_press",
+        "_color",
+        "_bg",
+        "_radius",
+        "_disabled",
+        "_pressed",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -229,3 +239,8 @@ class Button(Widget):
             f"width={self.width}, "
             f"height={self.height})"
         )
+
+    def destroy(self) -> None:
+        self._on_press = None
+        self._pressed = False
+        super().destroy()

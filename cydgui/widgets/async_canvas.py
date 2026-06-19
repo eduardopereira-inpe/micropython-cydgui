@@ -10,6 +10,17 @@ class AsyncCanvas(Widget):
     - mantém pipeline do Container intacto
     """
 
+    __slots__ = (
+        "_bg",
+        "_border_color",
+        "_touchable",
+        "_touch_callback",
+        "interval_ms",
+        "_running",
+        "_renderer",
+        "_draw_callback",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -91,7 +102,7 @@ class AsyncCanvas(Widget):
             self.invalidate()
             await asyncio.sleep_ms(self.interval_ms)
 
-    async def stop(self):
+    def stop(self):
         self._running = False
 
     async def update_async(self):
@@ -120,3 +131,10 @@ class AsyncCanvas(Widget):
                 text,
                 color
             )
+
+    def destroy(self) -> None:
+        self._running = False
+        self._touch_callback = None
+        self._draw_callback = None
+        self._renderer = None
+        super().destroy()

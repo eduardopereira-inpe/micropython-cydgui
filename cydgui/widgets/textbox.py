@@ -11,6 +11,19 @@ from cydgui.core.widget import Widget
 class TextBox(Widget):
     """Single-line editable text box."""
 
+    __slots__ = (
+        "_text",
+        "_color",
+        "_bg",
+        "_border_color",
+        "_radius",
+        "_font",
+        "_max_length",
+        "_password",
+        "_focused",
+        "_cursor_position",
+    )
+
     def __init__(
         self,
         x: int = 0,

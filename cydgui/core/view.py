@@ -38,6 +38,11 @@ from cydgui.core.screen import Screen
 class View(Screen):
     """Declarative screen base class."""
 
+    __slots__ = (
+        "app",
+        "parameters",
+    )
+
     def __init__(
         self,
         app=None,
@@ -74,17 +79,26 @@ class View(Screen):
         if self.app is None:
             return
 
-        # IMPORTANT: allow cleanup hook
-        if hasattr(self, "destroy"):
-            try:
-                self.destroy()
-            except:
-                pass
-
         if parameters is None:
             parameters = {}
 
         self.app.navigate(route, parameters=parameters)
+
+    def refresh(self, parameters: dict | None = None) -> None:
+        """Update the current view without rebuilding it."""
+
+        if parameters is not None:
+            self.parameters = parameters
+
+        try:
+            self.on_resume(self.parameters)
+        except Exception:
+            pass
+
+    def on_resume(self, parameters: dict | None = None) -> None:
+        """Called when an already-built view becomes active again."""
+
+        pass
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -96,6 +110,19 @@ class View(Screen):
         Override in subclasses.
         """
         pass
+
+    def destroy(self) -> None:
+        """Release view-specific references."""
+
+        try:
+            self.clear(destroy_children=True)
+        except Exception:
+            pass
+
+        self.app = None
+        self.parameters = None
+
+        super().destroy()
 
     # ------------------------------------------------------------------
     # Debug

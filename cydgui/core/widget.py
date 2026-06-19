@@ -11,6 +11,14 @@ from cydgui.utils.geometry import Rect
 class Widget:
     """Base widget for all visual components."""
 
+    __slots__ = (
+        "_rect",
+        "_visible",
+        "_enabled",
+        "_dirty",
+        "_parent",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -183,6 +191,14 @@ class Widget:
 
     def on_detach(self) -> None:
         self._parent = None
+
+    def destroy(self) -> None:
+        """Release references held by this widget."""
+
+        self.on_detach()
+        self._dirty = False
+        self._visible = False
+        self._enabled = False
 
     # -------------------------
     # Debug

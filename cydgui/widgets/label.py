@@ -11,6 +11,13 @@ from cydgui.core.widget import Widget
 class Label(Widget):
     """Static text widget."""
 
+    __slots__ = (
+        "_text",
+        "_color",
+        "_font",
+        "_align",
+    )
+
     LEFT = 0
     CENTER = 1
     RIGHT = 2

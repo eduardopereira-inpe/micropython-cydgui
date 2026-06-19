@@ -18,6 +18,12 @@ except ImportError:
 
 class BootView(View):
 
+    __slots__ = (
+        "logo",
+        "status_label",
+        "_startup_task",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "boot", parameters)
 
@@ -102,7 +108,7 @@ class BootView(View):
         )
 
         # Navega automaticamente após 2 segundos
-        self.app.create_task(self.startup())
+        self._startup_task = self.app.create_task(self.startup())
 
     async def startup(self):
         
@@ -146,5 +152,16 @@ class BootView(View):
 
 
         self.navigate("weather_dashboard", parameters=parametros_clima)
+
+    def destroy(self):
+
+        if hasattr(self, "_startup_task") and self._startup_task:
+            try:
+                self._startup_task.cancel()
+            except Exception:
+                pass
+            self._startup_task = None
+
+        super().destroy()
 
 #         self.navigate("home")

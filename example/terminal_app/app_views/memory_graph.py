@@ -16,6 +16,14 @@ class MemoryGraphView(View):
     No keyboard, no terminal -> maximum stability.
     """
 
+    __slots__ = (
+        "clock",
+        "_clock_task",
+        "graph",
+        "_graph_task",
+        "info",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "memory_graph", parameters)
 
@@ -111,13 +119,11 @@ class MemoryGraphView(View):
                 pass
             self._clock_task = None
 
-        self.clear()
+        self.samples = []
+        self.buf = None
+        self.fbuf = None
 
-        if self.parent:
-            try:
-                self.parent.remove(self)
-            except:
-                pass
+        super().destroy()
 
         gc.collect()
 
@@ -126,5 +132,5 @@ class MemoryGraphView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        self.destroy()
+        gc.collect()
         self.navigate("home")

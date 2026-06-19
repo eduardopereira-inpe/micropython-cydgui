@@ -9,6 +9,14 @@ class MemoryGraphWidget(AsyncCanvas):
     Gráfico de memória livre fatiado em bandas horizontais para consumo mínimo de RAM.
     """
 
+    __slots__ = (
+        "max_samples",
+        "samples",
+        "BAND_H",
+        "buf",
+        "fbuf",
+    )
+
     def __init__(self, max_samples=60, interval_ms=1000, **kwargs):
         super().__init__(interval_ms=interval_ms, **kwargs)
 

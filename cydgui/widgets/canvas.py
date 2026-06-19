@@ -7,6 +7,15 @@ class Canvas(Widget):
     Compatível com a árvore de renderização e ciclo de vida do Container.
     """
 
+    __slots__ = (
+        "_bg",
+        "_border_color",
+        "_touchable",
+        "_touch_callback",
+        "_draw_callback",
+        "_renderer",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -155,6 +164,12 @@ class Canvas(Widget):
         """Desvincula o desenho e força a limpeza na próxima renderização."""
         self._draw_callback = None
         self.invalidate()
+
+    def destroy(self) -> None:
+        self._touch_callback = None
+        self._draw_callback = None
+        self._renderer = None
+        super().destroy()
 
     def __repr__(self) -> str:
         return f"Canvas(x={self.x}, y={self.y}, width={self.width}, height={self.height})"

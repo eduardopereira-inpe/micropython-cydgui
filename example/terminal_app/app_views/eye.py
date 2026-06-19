@@ -13,6 +13,15 @@ from cydgui.utils.colors import Colors
 
 class EyeView(View):
 
+    __slots__ = (
+        "left_eye",
+        "right_eye",
+        "info",
+        "_left_eye_task",
+        "_right_eye_task",
+        "_wander_task",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "eye_demo", parameters)
 
@@ -36,28 +45,46 @@ class EyeView(View):
             y=10,
             width=170,
             height=20,
-            text="Eye Widget",
+            text="Eyes Demo",
             align=Label.CENTER
         ))
 
         # -----------------------------------------------------
-        # EYE
+        # EYES
         # -----------------------------------------------------
 
-        eye_size = 160
+        eye_size = 25
+        eye_gap = 30
 
-        self.eye = EyeWidget(
-            x=(Constants.DISPLAY_WIDTH - eye_size) // 2,
-            y=40,
+        total_width = (eye_size * 2) + eye_gap
+        start_x = (Constants.DISPLAY_WIDTH - total_width) // 2
+
+        eye_y = 90
+
+        self.left_eye = EyeWidget(
+            x=start_x,
+            y=eye_y,
             width=eye_size,
             height=eye_size,
             iris_color=Colors.GREEN,
             pupil_shape=EyeWidget.PUPIL_DIAMOND,
             bg=Colors.BLACK,
-            interval_ms=50
+            interval_ms=1000
         )
 
-        self.add(self.eye)
+        self.right_eye = EyeWidget(
+            x=start_x + eye_size + eye_gap,
+            y=eye_y,
+            width=eye_size,
+            height=eye_size,
+            iris_color=Colors.GREEN,
+            pupil_shape=EyeWidget.PUPIL_DIAMOND,
+            bg=Colors.BLACK,
+            interval_ms=1000
+        )
+
+        self.add(self.left_eye)
+        self.add(self.right_eye)
 
         # -----------------------------------------------------
         # CONTROLES
@@ -114,8 +141,12 @@ class EyeView(View):
         # TASKS
         # -----------------------------------------------------
 
-        self._eye_task = self.app.create_task(
-            self.eye.start()
+        self._left_eye_task = self.app.create_task(
+            self.left_eye.start()
+        )
+
+        self._right_eye_task = self.app.create_task(
+            self.right_eye.start()
         )
 
         self._wander_task = self.app.create_task(
@@ -146,30 +177,51 @@ class EyeView(View):
 
             dx, dy = positions[idx]
 
-            self.eye.look_at(dx, dy)
+            # Pequena diferença entre os olhos
+            self.left_eye.look_at(
+                max(-1.0, min(1.0, dx - 0.05)),
+                dy
+            )
+
+            self.right_eye.look_at(
+                max(-1.0, min(1.0, dx + 0.05)),
+                dy
+            )
 
             idx += 1
 
             if idx >= len(positions):
                 idx = 0
 
-            await asyncio.sleep_ms(1200)
+            await asyncio.sleep_ms(10000)
 
     # ---------------------------------------------------------
     # CORES
     # ---------------------------------------------------------
 
     def on_green(self, button):
-        self.eye.iris_color = Colors.GREEN
-        self.eye.invalidate()
+
+        self.left_eye.iris_color = Colors.GREEN
+        self.right_eye.iris_color = Colors.GREEN
+
+        self.left_eye.invalidate()
+        self.right_eye.invalidate()
 
     def on_blue(self, button):
-        self.eye.iris_color = Colors.BLUE
-        self.eye.invalidate()
+
+        self.left_eye.iris_color = Colors.BLUE
+        self.right_eye.iris_color = Colors.BLUE
+
+        self.left_eye.invalidate()
+        self.right_eye.invalidate()
 
     def on_red(self, button):
-        self.eye.iris_color = Colors.RED
-        self.eye.invalidate()
+
+        self.left_eye.iris_color = Colors.RED
+        self.right_eye.iris_color = Colors.RED
+
+        self.left_eye.invalidate()
+        self.right_eye.invalidate()
 
     # ---------------------------------------------------------
     # PUPILA
@@ -177,15 +229,19 @@ class EyeView(View):
 
     def toggle_pupil(self, button):
 
-        if self.eye.pupil_shape == EyeWidget.PUPIL_ROUND:
+        if self.left_eye.pupil_shape == EyeWidget.PUPIL_ROUND:
 
-            self.eye.pupil_shape = EyeWidget.PUPIL_DIAMOND
+            new_shape = EyeWidget.PUPIL_DIAMOND
 
         else:
 
-            self.eye.pupil_shape = EyeWidget.PUPIL_ROUND
+            new_shape = EyeWidget.PUPIL_ROUND
 
-        self.eye.invalidate()
+        self.left_eye.pupil_shape = new_shape
+        self.right_eye.pupil_shape = new_shape
+
+        self.left_eye.invalidate()
+        self.right_eye.invalidate()
 
     # ---------------------------------------------------------
     # CLEANUP
@@ -193,25 +249,24 @@ class EyeView(View):
 
     def destroy(self):
 
-        if hasattr(self, "_wander_task"):
-            try:
-                self._wander_task.cancel()
-            except Exception:
-                pass
+        for task_name in (
+            "_wander_task",
+            "_left_eye_task",
+            "_right_eye_task"
+        ):
 
-        if hasattr(self, "_eye_task"):
-            try:
-                self._eye_task.cancel()
-            except Exception:
-                pass
+            if hasattr(self, task_name):
 
-        self.clear()
+                task = getattr(self, task_name)
 
-        if self.parent:
-            try:
-                self.parent.remove(self)
-            except Exception:
-                pass
+                if task:
+
+                    try:
+                        task.cancel()
+                    except Exception:
+                        pass
+
+        super().destroy()
 
         gc.collect()
 
@@ -220,6 +275,5 @@ class EyeView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-
-        self.destroy()
+        gc.collect()
         self.navigate("home")

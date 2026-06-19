@@ -37,13 +37,20 @@ class Container(Widget):
             widget.on_detach()
             self.invalidate()
 
-    def clear(self) -> None:
+    def clear(self, destroy_children: bool = False) -> None:
         """Remove all children."""
 
-        for child in self._children:
-            child.on_detach()
+        for child in list(self._children):
+            try:
+                if destroy_children and hasattr(child, "destroy"):
+                    child.destroy()
+                else:
+                    child.on_detach()
+            except Exception:
+                pass
 
         self._children.clear()
+        self._dirty_children.clear()
 
         self.invalidate()
 
@@ -66,6 +73,10 @@ class Container(Widget):
     def validate(self) -> None:
         super().validate()
         self._dirty_children.clear()
+
+    def destroy(self) -> None:
+        self.clear(destroy_children=True)
+        super().destroy()
 
     # ------------------------------------------------------------------
     # Drawing (Substitua o método draw atual)

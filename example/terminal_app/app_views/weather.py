@@ -19,6 +19,18 @@ class WeatherView(View):
     para evitar memory leaks ao fechar a tela.
     """
 
+    __slots__ = (
+        "api_key",
+        "clock",
+        "_clock_task",
+        "crypto",
+        "_crypto_task",
+        "weather",
+        "info",
+        "_startup_task",
+        "_weather_task",
+    )
+
     def __init__(self, app, parameters=None):
         super().__init__(app, "weather_dashboard", parameters)
 
@@ -187,13 +199,7 @@ class WeatherView(View):
                 pass
             self._clock_task = None
 
-        self.clear()
-
-        if self.parent:
-            try:
-                self.parent.remove(self)
-            except Exception:
-                pass
+        super().destroy()
 
         gc.collect()
 
@@ -202,5 +208,5 @@ class WeatherView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        self.destroy()
+        gc.collect()
         self.navigate("home")

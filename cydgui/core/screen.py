@@ -20,6 +20,12 @@ from cydgui.core.container import Container
 class Screen(Container):
     """Root screen with partial redraw support."""
 
+    __slots__ = (
+        "name",
+        "background",
+        "_needs_full_clear",
+    )
+
     def __init__(
         self,
         name: str = "",
@@ -164,6 +170,12 @@ class Screen(Container):
         Called before screen is removed.
         """
         pass
+
+    def destroy(self) -> None:
+        """Release the full screen tree."""
+
+        self._needs_full_clear = True
+        super().destroy()
 
     # ------------------------------------------------------------------
     # Debug

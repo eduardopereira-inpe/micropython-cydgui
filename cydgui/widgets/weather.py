@@ -11,6 +11,21 @@ class WeatherWidget(AsyncCanvas):
     Widget de clima inspirado em painéis modernos, usando layout de grid.
     """
 
+    __slots__ = (
+        "lat",
+        "lon",
+        "api_key",
+        "_local",
+        "_temp",
+        "_feels_like",
+        "_desc",
+        "_humidity",
+        "_wind",
+        "_pressure",
+        "_visibility",
+        "_weather_id",
+    )
+
     def __init__(
         self,
         x,

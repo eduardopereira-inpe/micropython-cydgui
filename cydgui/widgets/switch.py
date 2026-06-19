@@ -240,3 +240,7 @@ class Switch(Widget):
             f"x={self.x}, "
             f"y={self.y})"
         )
+
+    def destroy(self) -> None:
+        self._on_change = None
+        super().destroy()

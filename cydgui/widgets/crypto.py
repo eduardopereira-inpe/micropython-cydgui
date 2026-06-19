@@ -18,6 +18,11 @@ class CryptoWidget(AsyncCanvas):
     ╰─────────╯ ╰────────╯
     """
 
+    __slots__ = (
+        "_btc",
+        "_usd",
+    )
+
     API_URL = (
         "http://api.coingecko.com/api/v3/simple/price"
         "?ids=bitcoin"
