@@ -169,8 +169,6 @@ class WeatherView(View):
 
         # 3. Agora sim, damos o start() no widget com as coordenadas corretas!
         self._weather_task = self.app.create_task(self.weather.start())
-        
-        self._crypto_task = self.app.create_task(self.crypto.start())
 
     # ---------------------------------------------------------
     # CLEANUP
@@ -192,12 +190,34 @@ class WeatherView(View):
                 pass
             self._weather_task = None
 
+        if hasattr(self, "_crypto_task") and self._crypto_task:
+            try:
+                self._crypto_task.cancel()
+            except Exception:
+                pass
+            self._crypto_task = None
+
         if hasattr(self, "_clock_task") and self._clock_task:
             try:
                 self._clock_task.cancel()
             except Exception:
                 pass
             self._clock_task = None
+
+        try:
+            self.crypto.stop()
+        except Exception:
+            pass
+
+        try:
+            self.weather.stop()
+        except Exception:
+            pass
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
 
         super().destroy()
 
@@ -208,5 +228,22 @@ class WeatherView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        gc.collect()
-        self.navigate("home")
+        app = self.app
+
+        try:
+            self.crypto.stop()
+        except Exception:
+            pass
+
+        try:
+            self.weather.stop()
+        except Exception:
+            pass
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
+
+        if app is not None:
+            app.navigate("home")

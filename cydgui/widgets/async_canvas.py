@@ -96,6 +96,9 @@ class AsyncCanvas(Widget):
     # ---------------------------------------------------------
 
     async def start(self):
+        if self._running:
+            return
+
         self._running = True
         while self._running:
             await self.update_async()
