@@ -204,6 +204,10 @@ class Renderer:
         color: int
     ):
         raise NotImplementedError()
+    
+    def block(self, x0, y0, x1, y1, data):
+        """Draw a block of pixel data."""
+        raise NotImplementedError()
 
     # ------------------------------------------------------------------
     # Text
