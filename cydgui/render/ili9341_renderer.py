@@ -9,6 +9,7 @@ generic cydgui Renderer API.
 """
 
 from cydgui.render.renderer import Renderer
+import math
 
 
 _DEFAULT_WIDTH = 240
@@ -17,6 +18,8 @@ _DEFAULT_HEIGHT = 320
 
 class ILI9341Renderer(Renderer):
     """ILI9341 renderer implementation."""
+
+    __slots__ = ("_driver",)
 
     def __init__(
         self,
@@ -278,7 +281,7 @@ class ILI9341Renderer(Renderer):
         text: str,
         color: int,
         font=None,
-        bg: int = None
+        bg=None
     ) -> None:
 
         if font is None:
@@ -346,8 +349,8 @@ class ILI9341Renderer(Renderer):
         bitmap,
         w: int,
         h: int,
-        color: int = None,
-        bg: int = None
+        color=None,
+        bg=None
     ) -> None:
 
         self._driver.draw_sprite(
@@ -380,8 +383,8 @@ class ILI9341Renderer(Renderer):
 
     def fill_ellipse(
         self,
-        cx: int,
-        cy: int,
+        x: int,
+        y: int,
         rx: int,
         ry: int,
         color: int
@@ -409,18 +412,18 @@ class ILI9341Renderer(Renderer):
                 continue
 
             self.draw_line(
-                cx - span,
-                cy + yy,
-                cx + span,
-                cy + yy,
+                x - span,
+                y + yy,
+                x + span,
+                y + yy,
                 color
             )
 
 
     def draw_ellipse(
         self,
-        cx: int,
-        cy: int,
+        x: int,
+        y: int,
         rx: int,
         ry: int,
         color: int
@@ -429,28 +432,26 @@ class ILI9341Renderer(Renderer):
         if rx <= 0 or ry <= 0:
             return
 
-        prev_x = None
-        prev_y = None
+        prev_x = x + rx
+        prev_y = y
 
-        for deg in range(361):
+        for deg in range(1, 361):
 
             rad = math.radians(deg)
 
-            x = cx + int(rx * math.cos(rad))
-            y = cy + int(ry * math.sin(rad))
+            px = x + int(rx * math.cos(rad))
+            py = y + int(ry * math.sin(rad))
 
-            if prev_x is not None:
+            self.draw_line(
+                prev_x,
+                prev_y,
+                px,
+                py,
+                color
+            )
 
-                self.draw_line(
-                    prev_x,
-                    prev_y,
-                    x,
-                    y,
-                    color
-                )
-
-            prev_x = x
-            prev_y = y
+            prev_x = px
+            prev_y = py
 
 
     # ------------------------------------------------------------------
@@ -459,8 +460,8 @@ class ILI9341Renderer(Renderer):
 
     def fill_diamond(
         self,
-        cx: int,
-        cy: int,
+        x: int,
+        y: int,
         radius: int,
         color: int
     ) -> None:
@@ -473,20 +474,20 @@ class ILI9341Renderer(Renderer):
             w = radius - i
 
             self.draw_line(
-                cx - w,
-                cy - i,
-                cx + w,
-                cy - i,
+                x - w,
+                y - i,
+                x + w,
+                y - i,
                 color
             )
 
             if i > 0:
 
                 self.draw_line(
-                    cx - w,
-                    cy + i,
-                    cx + w,
-                    cy + i,
+                    x - w,
+                    y + i,
+                    x + w,
+                    y + i,
                     color
                 )
 

@@ -22,6 +22,27 @@ from cydgui.utils.constants import Constants
 class Theme:
     """Framework theme."""
 
+    __slots__ = (
+        "background",
+        "foreground",
+        "primary",
+        "secondary",
+        "success",
+        "warning",
+        "error",
+        "border",
+        "disabled",
+        "panel",
+        "radius",
+        "border_width",
+        "padding_x",
+        "padding_y",
+        "spacing",
+        "text_padding_x",
+        "text_padding_y",
+        "font",
+    )
+
     def __init__(
         self,
         background: int = Colors.BACKGROUND,
@@ -35,6 +56,12 @@ class Theme:
         disabled: int = Colors.DISABLED,
         panel: int = Colors.PANEL,
         radius: int = Constants.DEFAULT_RADIUS,
+        border_width: int = Constants.DEFAULT_BORDER,
+        padding_x: int = Constants.SPACING_MD,
+        padding_y: int = Constants.SPACING_MD,
+        spacing: int = Constants.SPACING_SM,
+        text_padding_x: int = Constants.TEXT_PADDING_X,
+        text_padding_y: int = Constants.TEXT_PADDING_Y,
         font=None,
     ) -> None:
         """
@@ -71,6 +98,12 @@ class Theme:
         self.panel = panel
 
         self.radius = radius
+        self.border_width = border_width
+        self.padding_x = padding_x
+        self.padding_y = padding_y
+        self.spacing = spacing
+        self.text_padding_x = text_padding_x
+        self.text_padding_y = text_padding_y
 
         self.font = font
 
@@ -146,6 +179,12 @@ class Theme:
             disabled=self.disabled,
             panel=self.panel,
             radius=self.radius,
+            border_width=self.border_width,
+            padding_x=self.padding_x,
+            padding_y=self.padding_y,
+            spacing=self.spacing,
+            text_padding_x=self.text_padding_x,
+            text_padding_y=self.text_padding_y,
             font=self.font,
         )
 

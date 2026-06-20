@@ -24,7 +24,7 @@ except ImportError:
 import gc
 
 
-from cydgui.core.touch_event import TouchEvent
+from cydgui.core.events import EventDispatcher
 from cydgui.core.navigation import Navigation
 
 
@@ -34,14 +34,13 @@ class App:
     __slots__ = (
         "_renderer",
         "_touch",
+        "_dispatcher",
         "_frame_delay_ms",
         "_navigation",
         "_running",
-        "_pressed",
-        "_last_x",
-        "_last_y",
         "_routes",
         "_tasks",
+        "_task_cleanup_counter",
     )
 
     def __init__(
@@ -63,20 +62,18 @@ class App:
 
         self._renderer = renderer
         self._touch = touch
+        self._dispatcher = EventDispatcher(touch)
         self._frame_delay_ms = frame_delay_ms
 
         self._navigation = Navigation()
 
         self._running = False
-        self._pressed = False
-
-        self._last_x = 0
-        self._last_y = 0
 
         self._routes = {}
 
         # NEW: managed async tasks
         self._tasks = set()
+        self._task_cleanup_counter = 0
 
         if screen is not None:
             self.set_screen(screen)
@@ -97,7 +94,12 @@ class App:
 
     def _cleanup_tasks(self):
         """Remove finished tasks."""
-        self._tasks = {t for t in self._tasks if not t.done()}
+        if not self._tasks:
+            return
+
+        for task in tuple(self._tasks):
+            if task.done():
+                self._tasks.discard(task)
 
     # ------------------------------------------------------------------
     # Navigation
@@ -178,45 +180,7 @@ class App:
             TouchEvent or None.
         """
 
-        if self._touch is None:
-            return None
-
-        touch = self._touch.get_touch()
-
-        if touch is not None:
-
-            x, y = touch
-
-            self._last_x = x
-            self._last_y = y
-
-            if not self._pressed:
-
-                self._pressed = True
-
-                return TouchEvent(
-                    x=x,
-                    y=y,
-                    event_type=TouchEvent.DOWN
-                )
-
-            return TouchEvent(
-                x=x,
-                y=y,
-                event_type=TouchEvent.MOVE
-            )
-
-        if self._pressed:
-
-            self._pressed = False
-
-            return TouchEvent(
-                x=self._last_x,
-                y=self._last_y,
-                event_type=TouchEvent.UP
-            )
-
-        return None
+        return self._dispatcher.poll()
 
     # ------------------------------------------------------------------
     # Rendering
@@ -245,8 +209,6 @@ class App:
 
     async def _run_async(self) -> None:
         """Application async loop."""
-        
-        print(self._touch)
 
         self._running = True
 
@@ -261,8 +223,11 @@ class App:
 
             self._render()
 
-            # NEW: cleanup finished UI tasks
-            self._cleanup_tasks()
+            # Reduce per-frame allocations by cleaning tasks periodically.
+            self._task_cleanup_counter += 1
+            if self._task_cleanup_counter >= 32:
+                self._task_cleanup_counter = 0
+                self._cleanup_tasks()
 
             await asyncio.sleep_ms(self._frame_delay_ms)
     # ------------------------------------------------------------------
@@ -273,6 +238,7 @@ class App:
         """Stop application."""
 
         self._running = False
+        self._cleanup_tasks()
 
     def run(self) -> None:
         """Start application."""

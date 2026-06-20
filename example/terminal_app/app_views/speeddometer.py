@@ -1,11 +1,9 @@
 import gc
-import uasyncio as asyncio
 
 from cydgui.core.view import View
 from cydgui.widgets.button import Button
 from cydgui.widgets.label import Label
 from cydgui.widgets.clock_widget import ClockWidget
-# Ajuste o import abaixo para o caminho correto de onde salvou o widget
 from cydgui.widgets.speedometer import SpeedometerWidget 
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors

@@ -30,12 +30,23 @@ class Renderer:
         theme=None
     ) -> None:
 
+        # Keep renderer instances compact for MicroPython heap.
+        # Subclasses should define their own __slots__.
+        
+
         self._width = width
         self._height = height
 
         self._theme = theme
 
         self._clip_rect = None
+
+    __slots__ = (
+        "_width",
+        "_height",
+        "_theme",
+        "_clip_rect",
+    )
 
     # ------------------------------------------------------------------
     # Properties
@@ -205,7 +216,7 @@ class Renderer:
         text: str,
         color: int,
         font=None,
-        bg: int = None
+        bg=None
     ) -> None:
         """Draw text."""
         raise NotImplementedError
@@ -229,8 +240,8 @@ class Renderer:
         bitmap,
         w: int,
         h: int,
-        color: int = None,
-        bg: int = None
+        color=None,
+        bg=None
     ) -> None:
         """Draw bitmap."""
         raise NotImplementedError

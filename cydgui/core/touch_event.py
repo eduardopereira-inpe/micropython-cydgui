@@ -26,6 +26,12 @@ class TouchEvent:
     MOVE = 2
     UP = 3
 
+    __slots__ = (
+        "x",
+        "y",
+        "event_type",
+    )
+
     def __init__(
         self,
         x: int,
@@ -43,6 +49,14 @@ class TouchEvent:
         self.x = x
         self.y = y
         self.event_type = event_type
+
+    def set(self, x: int, y: int, event_type: int):
+        """Update the event payload in-place (used by event pooling)."""
+
+        self.x = x
+        self.y = y
+        self.event_type = event_type
+        return self
 
     @property
     def is_down(self) -> bool:
@@ -62,17 +76,20 @@ class TouchEvent:
     def __repr__(self) -> str:
         """Return a debug representation."""
 
-        names = {
-            self.DOWN: "DOWN",
-            self.MOVE: "MOVE",
-            self.UP: "UP"
-        }
+        if self.event_type == self.DOWN:
+            event_name = "DOWN"
+        elif self.event_type == self.MOVE:
+            event_name = "MOVE"
+        elif self.event_type == self.UP:
+            event_name = "UP"
+        else:
+            event_name = "UNKNOWN"
 
         return (
             "TouchEvent("
             f"x={self.x}, "
             f"y={self.y}, "
-            f"type={names.get(self.event_type, 'UNKNOWN')}"
+            f"type={event_name}"
             ")"
         )
 

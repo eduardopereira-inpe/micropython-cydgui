@@ -13,6 +13,11 @@ from cydgui.core.container import Container
 class Row(Container):
     """Horizontal layout container."""
 
+    __slots__ = (
+        "_spacing",
+        "_alignment",
+    )
+
     TOP = 0
     CENTER = 1
     BOTTOM = 2
@@ -47,7 +52,7 @@ class Row(Container):
 
         current_x = 0
 
-        for child in self.children:
+        for child in self.iter_children():
 
             new_x = current_x
             new_y = child.y

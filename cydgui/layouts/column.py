@@ -13,6 +13,11 @@ from cydgui.core.container import Container
 class Column(Container):
     """Vertical layout container."""
 
+    __slots__ = (
+        "_spacing",
+        "_alignment",
+    )
+
     LEFT = 0
     CENTER = 1
     RIGHT = 2
@@ -47,7 +52,7 @@ class Column(Container):
 
         current_y = 0
 
-        for child in self.children:
+        for child in self.iter_children():
 
             new_x = child.x
             new_y = current_y

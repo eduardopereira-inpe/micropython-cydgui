@@ -20,6 +20,16 @@ import uasyncio as asyncio
 class ProgressBar(Widget):
     """A horizontal progress bar widget."""
 
+    __slots__ = (
+        "_min",
+        "_max",
+        "_value",
+        "_bar_color",
+        "_bg_color",
+        "_border_color",
+        "_show_border",
+    )
+
     def __init__(
         self,
         x: int = 0,

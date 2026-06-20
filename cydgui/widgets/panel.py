@@ -11,6 +11,13 @@ from cydgui.core.container import Container
 class Panel(Container):
     """Visual container widget."""
 
+    __slots__ = (
+        "_bg",
+        "_border_color",
+        "_border_width",
+        "_radius",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -172,7 +179,7 @@ class Panel(Container):
         # Draw children
         #
 
-        for child in self.children:
+        for child in self.iter_children():
 
             child.draw(renderer)
 

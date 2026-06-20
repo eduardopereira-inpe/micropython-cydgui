@@ -15,6 +15,21 @@ class WeatherWidget(AsyncWidget):
     CENTER = 1
     RIGHT = 2
 
+    __slots__ = (
+        "lat",
+        "lon",
+        "api_key",
+        "_local",
+        "_temp",
+        "_desc",
+        "_color",
+        "_bg_color",
+        "_font_title",
+        "_font_temp",
+        "_font_desc",
+        "_align",
+    )
+
     def __init__(self, x, y, lat, lon, api_key,
                  width=120, height=80, 
                  color=Colors.WHITE,

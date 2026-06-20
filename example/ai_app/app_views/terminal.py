@@ -1,19 +1,20 @@
 import gc
-import gc
 import uasyncio as asyncio
 
 from cydgui.core.view import View
 
-from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.widgets.textbox import TextBox
+from cydgui.widgets.label import Label
 
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
-
+from ullmtools import (
+    OpenAI
+)
 
 
 from ullmtools import (
@@ -21,27 +22,93 @@ from ullmtools import (
 )
 
 from ullmtools.tools import (
-    # GetTemperatureTool,
     TurnOnOffLedTool,
     LocalTimeTool,
     LocalDateTimeTool,
     Scheduler,
     ScheduleEventTool,
-    DisplayMessageTool, 
     GetLatLonTool,
     GetWeatherTool
-
-    
 )
 
+
+# ============================================================
+# LLM Tools
+# ============================================================
+
+def create_tools():
+    llm = OpenAI(
+        api_key=API_KEY
+    )
+    scheduler = Scheduler(
+        tool_executor=
+            llm.execute_tool
+    )
+
+    llm.set_scheduler(
+        scheduler
+    )
+
+    schedule_event_tool = ScheduleEventTool(
+        scheduler
+    )
+
+    turn_onoff_led = TurnOnOffLedTool()
+    get_local_time = LocalTimeTool()
+    get_local_datetime = LocalDateTimeTool()
+    get_lat_lon = GetLatLonTool()
+    get_weather = GetWeatherTool()
+
+    # ------------------------------
+    # Register Tools
+    # ------------------------------
+
+    llm.register_tool(tool=schedule_event_tool)
+
+    # self.llm.register_tool(
+    #     tool=GetTemperatureTool()
+    # )
+    
+    llm.register_tool(tool=turn_onoff_led)
+    
+    llm.register_tool(tool=get_local_time)
+
+    llm.register_tool(tool=get_local_datetime)
+
+    llm.register_tool(tool=get_lat_lon)
+
+    llm.register_tool(tool=get_weather)
+
+    # ------------------------------
+
+    callback = (
+        lambda message: print(message)
+    )
+    
+
+    chat = ChatService(
+        llm=llm,
+        callback=callback
+    )
+    
+    return chat, llm
+
+
+
+config = load_dotenv("env.txt")
+
+API_KEY = config.get("API_KEY")
+
+CHAT, LLM = create_tools()
 
 class TerminalView(View):
     """Simple terminal application."""
 
     MAX_LINES = 10
 
-    def __init__(self, app, parameters=None):
+    def __init__(self, app,  parameters={"chat": CHAT, "llm": LLM}):
         self.lines = []
+        self._question_task = None
 
         super().__init__(
             app,
@@ -247,21 +314,49 @@ class TerminalView(View):
             
             self.get_question(command)
 
+    async def _ask_and_print(self, question):
+        """Ask the chat service without blocking the UI loop."""
+        try:
+            chat = self.parameters.get("chat") if self.parameters else None
+            llm = self.parameters.get("llm") if self.parameters else None
+
+            if chat is None or llm is None:
+                self.println("AI service unavailable")
+                return
+
+            response = await chat.ask(
+                question,
+                tools=llm.get_tools_schema()
+            )
+
+            if response is None:
+                self.println("No response")
+                return
+
+            text = str(response)
+            for line in text.split("\n"):
+                self.println(line)
+        except Exception as error:
+            self.println("AI error: {}".format(error))
+
     # ---------------------------------------------------------
     # Keyboard handler
     # ---------------------------------------------------------
     
     def get_question(self, question:str):
-        
-        chat = self.parameters["chat"]
-        llm = self.parameters["llm"]
-        
-        response = asyncio.create_task(
-            chat.ask(
-            question,
-            tools=llm.get_tools_schema()
-        )
-        )
+        app = self.app
+
+        if self._question_task is not None:
+            try:
+                self._question_task.cancel()
+            except Exception:
+                pass
+            self._question_task = None
+
+        if app is not None:
+            self._question_task = app.create_task(self._ask_and_print(question))
+        else:
+            self._question_task = asyncio.create_task(self._ask_and_print(question))
 
 
     def on_key(self, key):
@@ -301,9 +396,24 @@ class TerminalView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
+        app = self.app
 
-        self.clear()
+        if self._question_task is not None:
+            try:
+                self._question_task.cancel()
+            except Exception:
+                pass
+            self._question_task = None
 
-        gc.collect()
+        if app is not None:
+            app.navigate("home")
 
-        self.navigate("home")
+    def destroy(self):
+        if self._question_task is not None:
+            try:
+                self._question_task.cancel()
+            except Exception:
+                pass
+            self._question_task = None
+
+        super().destroy()

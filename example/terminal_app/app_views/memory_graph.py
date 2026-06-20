@@ -1,5 +1,4 @@
 import gc
-import uasyncio as asyncio
 
 from cydgui.core.view import View
 from cydgui.widgets.memory_graph import MemoryGraphWidget
@@ -119,9 +118,20 @@ class MemoryGraphView(View):
                 pass
             self._clock_task = None
 
-        self.samples = []
-        self.buf = None
-        self.fbuf = None
+        try:
+            self.graph.stop()
+        except Exception:
+            pass
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
+
+        if hasattr(self, "graph") and self.graph:
+            self.graph.samples = []
+            self.graph.buf = None
+            self.graph.fbuf = None
 
         super().destroy()
 
@@ -132,5 +142,17 @@ class MemoryGraphView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        gc.collect()
-        self.navigate("home")
+        app = self.app
+
+        try:
+            self.graph.stop()
+        except Exception:
+            pass
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
+
+        if app is not None:
+            app.navigate("home")

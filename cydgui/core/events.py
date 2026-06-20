@@ -14,6 +14,14 @@ from cydgui.core.touch_event import TouchEvent
 class EventDispatcher:
     """Converts raw touch input into TouchEvent stream."""
 
+    __slots__ = (
+        "_touch",
+        "_pressed",
+        "_last_x",
+        "_last_y",
+        "_event",
+    )
+
     def __init__(self, touch_device=None) -> None:
         """
         Args:
@@ -25,6 +33,7 @@ class EventDispatcher:
         self._pressed = False
         self._last_x = 0
         self._last_y = 0
+        self._event = TouchEvent(0, 0, TouchEvent.UP)
 
     # ------------------------------------------------------------------
     # Input polling
@@ -54,26 +63,26 @@ class EventDispatcher:
 
                 self._pressed = True
 
-                return TouchEvent(
-                    x=x,
-                    y=y,
-                    event_type=TouchEvent.DOWN
+                return self._event.set(
+                    x,
+                    y,
+                    TouchEvent.DOWN
                 )
 
-            return TouchEvent(
-                x=x,
-                y=y,
-                event_type=TouchEvent.MOVE
+            return self._event.set(
+                x,
+                y,
+                TouchEvent.MOVE
             )
 
         if self._pressed:
 
             self._pressed = False
 
-            return TouchEvent(
-                x=self._last_x,
-                y=self._last_y,
-                event_type=TouchEvent.UP
+            return self._event.set(
+                self._last_x,
+                self._last_y,
+                TouchEvent.UP
             )
 
         return None

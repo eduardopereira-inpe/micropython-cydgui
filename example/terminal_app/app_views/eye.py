@@ -275,5 +275,17 @@ class EyeView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        gc.collect()
-        self.navigate("home")
+        app = self.app
+
+        try:
+            self.left_eye.stop()
+        except Exception:
+            pass
+
+        try:
+            self.right_eye.stop()
+        except Exception:
+            pass
+
+        if app is not None:
+            app.navigate("home")

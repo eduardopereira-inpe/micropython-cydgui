@@ -8,8 +8,6 @@ import gc
 gc.threshold(gc.mem_free() // 4)
 
 
-from connectivity.wifi import connect_to_wifi, WLAN
-
 from cydgui.render.ili9341_renderer import ILI9341Renderer
 from cydgui.app import App
 
@@ -20,13 +18,6 @@ from app_views.memory_graph import MemoryGraphView
 from app_views.speeddometer import SpeedometerView
 from app_views.weather import WeatherView
 from app_views.vboot import BootView
-from udotenv.dotenv import load_dotenv
-
-import urequests
-import ujson
-
-import uasyncio as asyncio
-from cydgui.utils.tools import get_lat_lon_from_my_ip
 
 
 # ============================================================
@@ -73,5 +64,5 @@ app.route("weather_dashboard", WeatherView)
 
 
 app.navigate("boot")
-    
+
 app.run()

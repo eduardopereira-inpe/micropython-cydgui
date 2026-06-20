@@ -13,6 +13,12 @@ from cydgui.core.container import Container
 class Grid(Container):
     """Grid layout container."""
 
+    __slots__ = (
+        "_rows",
+        "_columns",
+        "_spacing",
+    )
+
     def __init__(
         self,
         x: int = 0,
@@ -54,7 +60,7 @@ class Grid(Container):
     def _layout_children(self) -> None:
         """Position child widgets."""
 
-        if not self.children:
+        if not self._children:
             return
 
         cell_width = (
@@ -67,7 +73,7 @@ class Grid(Container):
             ((self._rows - 1) * self._spacing)
         ) // self._rows
 
-        for index, child in enumerate(self.children):
+        for index, child in enumerate(self._children):
 
             row = index // self._columns
             column = index % self._columns

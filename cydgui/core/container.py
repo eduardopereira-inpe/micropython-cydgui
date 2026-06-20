@@ -9,6 +9,11 @@ from cydgui.core.widget import Widget
 class Container(Widget):
     """Widget that stores children and manages partial redraw."""
 
+    __slots__ = (
+        "_children",
+        "_dirty_children",
+    )
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._children = []
@@ -19,6 +24,10 @@ class Container(Widget):
 
         if self._parent:
             self._parent.child_invalidated(self)
+
+    # Backward-compatible alias used by Widget.invalidate()
+    def child_invalidated(self, child):
+        self.mark_child_dirty(child)
 
     # -------------------------
     # Children
@@ -57,6 +66,10 @@ class Container(Widget):
     @property
     def children(self):
         return tuple(self._children)
+
+    def iter_children(self):
+        """Return direct children iterator without allocating a tuple."""
+        return self._children
 
     # ------------------------------------------------------------------
     # Drawing

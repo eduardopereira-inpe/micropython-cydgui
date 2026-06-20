@@ -21,17 +21,13 @@ from ullmtools import (
 )
 
 from ullmtools.tools import (
-    # GetTemperatureTool,
     TurnOnOffLedTool,
     LocalTimeTool,
     LocalDateTimeTool,
     Scheduler,
     ScheduleEventTool,
-    DisplayMessageTool, 
     GetLatLonTool,
     GetWeatherTool
-
-    
 )
 
 gc.collect()
@@ -137,8 +133,6 @@ app = App(
 
 
 chat, llm = create_tools()
-
-question = await question_task
 
 
 app.route("home", HomeView)

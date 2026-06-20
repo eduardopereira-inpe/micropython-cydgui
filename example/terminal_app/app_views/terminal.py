@@ -8,7 +8,6 @@ from cydgui.widgets.canvas import Canvas
 from cydgui.widgets.virtual_keyboard import VirtualKeyboard
 from cydgui.widgets.textbox import TextBox
 from cydgui.widgets.clock_widget import ClockWidget
-from cydgui.widgets.memory_graph import MemoryGraphWidget
 
 
 from cydgui.utils.constants import Constants
@@ -131,8 +130,6 @@ class TerminalView(View):
                 self._clock_task.cancel()
             except:
                 pass
-            del self._clock_task
-            gc.collect()
             self._clock_task = None
 
         # stop clock explicitly if supported
@@ -295,6 +292,12 @@ class TerminalView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        gc.collect()
+        app = self.app
 
-        self.navigate("home")
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
+
+        if app is not None:
+            app.navigate("home")

@@ -30,6 +30,20 @@ class Gauge(Widget):
     Displays a value in a semi-circular dial format.
     """
 
+    __slots__ = (
+        "_radius",
+        "_min",
+        "_max",
+        "_value",
+        "_start_angle",
+        "_end_angle",
+        "_color",
+        "_needle_color",
+        "_bg_color",
+        "_show_value",
+        "_label",
+    )
+
     def __init__(
         self,
         x: int = 0,

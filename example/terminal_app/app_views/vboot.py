@@ -122,7 +122,6 @@ class BootView(View):
         
         config = load_dotenv("env.txt")
 
-        API_KEY = config.get("API_KEY")
         SSID = config.get("WIFI_SSID")
         PASSWORD = config.get("WIFI_PASS")
         API_OPENWEATHER = config.get("API_OPENWEATHER")

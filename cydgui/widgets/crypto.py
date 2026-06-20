@@ -1,6 +1,5 @@
 import gc
 import urequests
-import uasyncio as asyncio
 
 from cydgui.widgets.async_canvas import AsyncCanvas
 from cydgui.utils.colors import Colors
@@ -22,6 +21,7 @@ class CryptoWidget(AsyncCanvas):
     __slots__ = (
         "_btc",
         "_usd",
+        "_debug",
     )
 
     # API unificada para trazer os dois preços em uma única requisição HTTP
@@ -49,6 +49,7 @@ class CryptoWidget(AsyncCanvas):
 
         self._btc = "--"
         self._usd = "--"
+        self._debug = False
 
     # ---------------------------------------------------------
     # HTTP
@@ -62,19 +63,18 @@ class CryptoWidget(AsyncCanvas):
 
         try:
             response = urequests.get(url, headers=headers)
-            
-            
+
             if response.status_code == 200:
                 return response.json()
-            elif response.status_code == 429:
-                print("Binance Rate Limit atingido!")
-                return "429"
+            if self._debug and response.status_code == 429:
+                print("Binance Rate Limit atingido")
+            return None
         except Exception as error:
-            print(error)
+            if self._debug:
+                print(error)
+            return None
         finally:
             if response:
-                print(response.text)
-            
                 try:
                     response.close()
                 except Exception:
@@ -86,17 +86,8 @@ class CryptoWidget(AsyncCanvas):
     # ---------------------------------------------------------
 
     async def update_async(self):
-        gc.collect()
-        
-        await asyncio.sleep_ms(1000)
-
         try:
             data = self._fetch_json(self.API_URL)
-
-            if data == "429":
-                self._btc = "Wait"
-                self._usd = "Wait"
-                return
 
             if data and isinstance(data, list):
                 # A Binance retorna uma lista de dicionários planos: 
@@ -121,14 +112,12 @@ class CryptoWidget(AsyncCanvas):
                     elif symbol == "USDTBRL":
                         self._usd = "{:.2f}".format(value)
 
-            else:
-                # Caso o parse falhe ou venha vazio
-                self._btc = "--"
-                self._usd = "--"
+            # Quando falha, preserva o último valor válido para evitar flicker.
 
         except Exception:
-            self._btc = "Err"
-            self._usd = "Err"
+            if self._debug:
+                self._btc = "Err"
+                self._usd = "Err"
 
         gc.collect()
 
@@ -149,6 +138,9 @@ class CryptoWidget(AsyncCanvas):
         shadow_offset=2
     ):
         r = self.renderer
+
+        if r is None:
+            return
 
         # -------------------------
         # SOMBRA
@@ -185,6 +177,8 @@ class CryptoWidget(AsyncCanvas):
 
     def _draw_bitcoin_icon(self, x, y, color=Colors.ORANGE):
         r = self.renderer
+        if r is None:
+            return
         r.draw_text(x, y, "B", color)
         r.draw_line(x + 2, y - 1, x + 2, y + 9, color)
         r.draw_line(x + 6, y - 1, x + 6, y + 9, color)

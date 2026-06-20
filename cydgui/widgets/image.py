@@ -20,6 +20,14 @@ from cydgui.core.widget import Widget
 class Image(Widget):
     """Image widget."""
 
+    __slots__ = (
+        "_bitmap",
+        "_bitmap_width",
+        "_bitmap_height",
+        "_align",
+        "_valign",
+    )
+
     LEFT = 0
     CENTER = 1
     RIGHT = 2

@@ -64,15 +64,11 @@ class WeatherWidget(AsyncCanvas):
         self._weather_id = 0
 
     async def update_async(self):
-        gc.collect()
-
         clima = get_weather_by_coords(
             self.lat,
             self.lon,
             self.api_key
         )
-
-        gc.collect()
 
         if clima and clima.get("sucesso"):
 

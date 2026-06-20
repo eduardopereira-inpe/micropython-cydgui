@@ -7,7 +7,6 @@ from cydgui.widgets.label import Label
 from cydgui.widgets.button import Button
 from cydgui.widgets.memory_graph import MemoryGraphWidget
 from cydgui.widgets.canvas import Canvas
-from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
 from udotenv.dotenv import load_dotenv
@@ -280,10 +279,6 @@ class HomeView(View):
             )
         )
         
-        parametros_clima = {       
-        "api_key": API_KEY
-        }
-
     def destroy(self):
 
         if hasattr(self, "_graph_task") and self._graph_task:
@@ -302,24 +297,25 @@ class HomeView(View):
     # ---------------------------------------------------------
 
     def on_speedometer(self, button):
-        self.clear()
-        gc.collect()
-        self.navigate("speedometer")
+        app = self.app
+        if app is not None:
+            app.navigate("speedometer")
     
     def on_memory(self, button):
-        self.clear()
-        gc.collect()
-        self.navigate("memory_graph")
+        app = self.app
+        if app is not None:
+            app.navigate("memory_graph")
 
     def on_terminal(self, button):
-        gc.collect()
-        self.navigate("terminal")
+        app = self.app
+        if app is not None:
+            app.navigate("terminal")
         
     def on_weather(self, button):  
         parametros_clima = {       
                 "api_key": API_KEY
             }
-            
-        
-        # O nome aqui deve ser o mesmo usado no __init__ da sua WeatherView
-        self.navigate("weather_dashboard", parameters=parametros_clima)
+
+        app = self.app
+        if app is not None:
+            app.navigate("weather_dashboard", parameters=parametros_clima)

@@ -1,3 +1,4 @@
+import gc
 from cydgui.driver.ili9341 import Display
 from cydgui.driver.xpt2046 import Touch
 from machine import Pin, SPI
@@ -72,6 +73,8 @@ class TFTTouch:
         self._touch_queue = []
 
         if has_touch:
+            gc.collect()
+            
             self._sspi = SPI(
                 2,
                 baudrate=1000000,

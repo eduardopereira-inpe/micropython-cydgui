@@ -20,6 +20,19 @@ from cydgui.core.widget import Widget
 class ListView(Widget):
     """Selectable text list."""
 
+    __slots__ = (
+        "_items",
+        "_row_height",
+        "_bg_color",
+        "_text_color",
+        "_selected_color",
+        "_border_color",
+        "_show_border",
+        "_selected_index",
+        "_first_visible",
+        "_on_select",
+    )
+
     def __init__(
         self,
         x=0,
@@ -311,9 +324,9 @@ class ListView(Widget):
 
         if getattr(
             event,
-            "type",
+            "is_up",
             None
-        ) != "up":
+        ) is not True:
             return True
 
         index = self._row_from_y(
