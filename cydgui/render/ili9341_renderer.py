@@ -76,6 +76,10 @@ class ILI9341Renderer(Renderer):
             self._inside_display(x, y) and
             self._inside_clip(x, y)
         )
+    
+    @property
+    def driver(self):
+        return self._driver
 
     # ------------------------------------------------------------------
     # Display control

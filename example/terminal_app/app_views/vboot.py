@@ -144,13 +144,15 @@ class BootView(View):
 
         await asyncio.sleep_ms(1000)
         
+        self.navigate("matrixrain")
+        
         # 
-        parametros_clima = {       
-                "api_key": API_OPENWEATHER
-            }
-
-
-        self.navigate("weather_dashboard", parameters=parametros_clima)
+#         parametros_clima = {       
+#                 "api_key": API_OPENWEATHER
+#             }
+# 
+# 
+#         self.navigate("weather_dashboard", parameters=parametros_clima)
 
     def destroy(self):
 

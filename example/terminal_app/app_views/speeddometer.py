@@ -1,19 +1,16 @@
 import gc
+import uasyncio as asyncio
 
 from cydgui.core.view import View
 from cydgui.widgets.button import Button
 from cydgui.widgets.label import Label
 from cydgui.widgets.clock_widget import ClockWidget
-from cydgui.widgets.speedometer import SpeedometerWidget 
+from cydgui.widgets.speedometer import SpeedometerWidget
 from cydgui.utils.constants import Constants
 from cydgui.utils.colors import Colors
 
 
 class SpeedometerView(View):
-    """
-    Dashboard interativo para demonstração do SpeedometerWidget.
-    Gerencia o ciclo de vida do canvas assíncrono para evitar memory leaks.
-    """
 
     __slots__ = (
         "clock",
@@ -31,6 +28,7 @@ class SpeedometerView(View):
     # ---------------------------------------------------------
 
     def build(self):
+
         self.parameters = self.parameters or {}
 
         # -----------------------------------------------------
@@ -47,11 +45,11 @@ class SpeedometerView(View):
         ))
 
         self.add(Label(
-            x=20,
+            x=35,
             y=10,
-            width=Constants.DISPLAY_WIDTH - 100,
+            width=Constants.DISPLAY_WIDTH - 140,
             height=20,
-            text="Dashboard Monitor",
+            text="Dash. Mon.",
             align=Label.CENTER
         ))
 
@@ -62,35 +60,41 @@ class SpeedometerView(View):
             height=20
         )
 
-        self._clock_task = self.app.create_task(self.clock.start())
+        self._clock_task = self.app.create_task(
+            self.clock.start()
+        )
+
         self.add(self.clock)
 
         # -----------------------------------------------------
-        # SPEEDOMETER (CENTRAL FOCUS)
+        # SPEEDOMETER
         # -----------------------------------------------------
-        
-        # Calculamos as dimensões para centralizar o velocímetro
+
         sp_width = 240
         sp_height = 140
-        sp_x = int((Constants.DISPLAY_WIDTH - sp_width) / 2)
+        sp_x = (Constants.DISPLAY_WIDTH - sp_width) // 2
 
         self.speedometer = SpeedometerWidget(
             x=sp_x,
             y=50,
             width=sp_width,
-            height=sp_height,
+            height=140,
             bg=Colors.BLACK,
             border_color=Colors.DARK_GRAY,
             min_val=0,
-            max_val=120,      # Escala de 0 a 120
-            interval_ms=50    # Taxa de atualização fluida para a animação
+            max_val=120
         )
 
-        self._speed_task = self.app.create_task(self.speedometer.start())
         self.add(self.speedometer)
 
+        # animação simples:
+        # 0 -> 60 -> 120 -> 60 -> 0
+        self._speed_task = self.app.create_task(
+            self.demo_speedometer()
+        )
+
         # -----------------------------------------------------
-        # INFO FOOTER
+        # FOOTER
         # -----------------------------------------------------
 
         self.info = Label(
@@ -98,32 +102,63 @@ class SpeedometerView(View):
             y=210,
             width=Constants.DISPLAY_WIDTH,
             height=20,
-            text="Simulação de leitura em tempo real",
+            text="Demo do SpeedometerWidget",
             align=Label.CENTER
         )
 
         self.add(self.info)
 
     # ---------------------------------------------------------
+    # SPEED DEMO
+    # ---------------------------------------------------------
+
+    async def demo_speedometer(self):
+
+        sequence = (
+            (0, 0),
+            (60, 1250),
+            (120, 1250),
+            (60, 1250),
+            (0, 1250),
+        )
+
+        while True:
+
+            for value, delay_ms in sequence:
+
+                try:
+                    self.speedometer.set_value(value)
+                except Exception as error:
+                    print(error)
+                    return
+
+                if delay_ms > 0:
+                    await asyncio.sleep_ms(delay_ms)
+
+    # ---------------------------------------------------------
     # CLEANUP
     # ---------------------------------------------------------
 
     def destroy(self):
-        # Cancelar a task do velocímetro de forma segura
-        if hasattr(self, "_speed_task") and self._speed_task:
+
+        if self._speed_task:
             try:
                 self._speed_task.cancel()
             except Exception:
                 pass
             self._speed_task = None
 
-        # Cancelar a task do relógio
-        if hasattr(self, "_clock_task") and self._clock_task:
+        if self._clock_task:
             try:
                 self._clock_task.cancel()
             except Exception:
                 pass
             self._clock_task = None
+
+        try:
+            self.clock.stop()
+        except Exception:
+            pass
 
         super().destroy()
 
@@ -134,17 +169,11 @@ class SpeedometerView(View):
     # ---------------------------------------------------------
 
     def on_back(self, button):
-        app = self.app
-
-        try:
-            self.speedometer.stop()
-        except Exception:
-            pass
 
         try:
             self.clock.stop()
         except Exception:
             pass
 
-        if app is not None:
-            app.navigate("home")
+        if self.app:
+            self.app.navigate("home")

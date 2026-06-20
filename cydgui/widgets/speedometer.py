@@ -1,212 +1,270 @@
 import math
-from .buffered_canvas import BufferedCanvas
+
+from .async_canvas import AsyncCanvas
 from cydgui.utils.colors import Colors
 
 
-class SpeedometerWidget(BufferedCanvas):
-    """
-    Speedometer otimizado para framebuffer RGB565.
-
-    Estratégia:
-    - background (estático) pré-renderizado uma vez
-    - frame: copia background + ponteiro + texto
-    """
+class SpeedometerWidget(AsyncCanvas):
 
     __slots__ = (
         "min_val",
         "max_val",
         "value",
-        "_step",
-        "_background",
-        "_bg_ready",
     )
 
-    # ---------------------------------------------------------
-    # INIT
-    # ---------------------------------------------------------
-
-    def __init__(self, min_val=0, max_val=100, interval_ms=50, **kwargs):
-
+    def __init__(
+        self,
+        min_val=0,
+        max_val=100,
+        value=0,
+        interval_ms=1000,
+        **kwargs
+    ):
         super().__init__(interval_ms=interval_ms, **kwargs)
 
         self.min_val = min_val
         self.max_val = max_val
-        self.value = min_val
-
-        self._step = 2
-
-        self._background = bytearray(self.width * self.height * 2)
-        self._bg_ready = False
+        self.value = value
 
     # ---------------------------------------------------------
-    # ASYNC UPDATE
+    # API
     # ---------------------------------------------------------
 
-    async def update_async(self):
+    def set_value(self, value):
 
-        self.value += self._step
-
-        if self.value >= self.max_val or self.value <= self.min_val:
-            self._step *= -1
-
-    # ---------------------------------------------------------
-    # BUILD BACKGROUND (EXECUTADO 1x)
-    # ---------------------------------------------------------
-
-    def _build_background(self):
-
-        # copia base do canvas
-        self._buffer[:] = bytes(self._buffer)
-
-        cx = self.width // 2
-        cy = self.height - 20
-        r = min(self.width // 2, self.height) - 15
-
-        COR_BASE = Colors.DARK_GRAY if hasattr(Colors, 'DARK_GRAY') else 0x4208
-        COR_BOM = Colors.GREEN if hasattr(Colors, 'GREEN') else 0x07E0
-        COR_ALERTA = Colors.YELLOW if hasattr(Colors, 'YELLOW') else 0xFFE0
-        COR_PERIGO = Colors.RED if hasattr(Colors, 'RED') else 0xF800
-
-        # base horizontal
-        self.hline(cx - r - 5, cy, (r * 2) + 10, COR_BASE)
-
-        # ticks
-        steps = 20
-
-        for i in range(steps + 1):
-
-            ratio = i / steps
-            angle = math.pi - (ratio * math.pi)
-
-            if ratio < 0.6:
-                color = COR_BOM
-            elif ratio < 0.8:
-                color = COR_ALERTA
-            else:
-                color = COR_PERIGO
-
-            is_major = (i % 2 == 0)
-            length = 12 if is_major else 6
-
-            r_in = r - length
-            r_out = r
-
-            x1 = cx + int(r_in * math.cos(angle))
-            y1 = cy - int(r_in * math.sin(angle))
-
-            x2 = cx + int(r_out * math.cos(angle))
-            y2 = cy - int(r_out * math.sin(angle))
-
-            self.line(x1, y1, x2, y2, color)
-
-        # hub base
-        hub = 8
-
-        self.fill_rect(
-            cx - hub // 2,
-            cy - hub // 2,
-            hub,
-            hub,
-            COR_BASE
+        value = max(
+            self.min_val,
+            min(self.max_val, value)
         )
 
-        self.rect(
-            cx - hub // 2,
-            cy - hub // 2,
-            hub,
-            hub,
+        if value != self.value:
+            self.value = value
+            self.invalidate()
+
+    # ---------------------------------------------------------
+    # DRAW
+    # ---------------------------------------------------------
+
+    def on_draw(self):
+
+        w = self.width
+        h = self.height
+
+        cx = w // 2
+        cy = h - 20
+
+        r = min(w // 2, h) - 15
+
+        COR_TEXTO = getattr(
+            Colors,
+            "WHITE",
             0xFFFF
         )
 
-        self._bg_ready = True
+        COR_PONTEIRO = getattr(
+            Colors,
+            "RED",
+            0xF800
+        )
 
-    # ---------------------------------------------------------
-    # DRAW FRAME
-    # ---------------------------------------------------------
+        COR_BASE = getattr(
+            Colors,
+            "DARK_GRAY",
+            0x4208
+        )
 
-    def draw(self, renderer):
+        COR_BOM = getattr(
+            Colors,
+            "GREEN",
+            0x07E0
+        )
 
-        if not self.visible:
-            return
+        COR_ALERTA = getattr(
+            Colors,
+            "YELLOW",
+            0xFFE0
+        )
 
-        self._renderer = renderer
+        COR_PERIGO = getattr(
+            Colors,
+            "RED",
+            0xF800
+        )
 
-        # primeira vez constrói background
-        if not self._bg_ready:
-            self._build_background()
+        # -----------------------------------------------------
+        # LINHA BASE
+        # -----------------------------------------------------
 
-        # copia background para frame atual
-        self._buffer[:] = self._background
+        self.draw_line(
+            cx - r - 5,
+            cy,
+            cx + r + 5,
+            cy,
+            COR_BASE
+        )
 
-        cx = self.width // 2
-        cy = self.height - 20
-        r = min(self.width // 2, self.height) - 15
+        # -----------------------------------------------------
+        # ESCALA
+        # -----------------------------------------------------
 
-        val = max(self.min_val, min(self.max_val, self.value))
-        ratio = (val - self.min_val) / (self.max_val - self.min_val)
+        passos = 20
+
+        for i in range(passos + 1):
+
+            ratio = i / passos
+
+            angle = math.pi - (ratio * math.pi)
+
+            if ratio < 0.60:
+                cor = COR_BOM
+            elif ratio < 0.80:
+                cor = COR_ALERTA
+            else:
+                cor = COR_PERIGO
+
+            major = (i % 2 == 0)
+
+            tick = 12 if major else 6
+
+            x1 = cx + int((r - tick) * math.cos(angle))
+            y1 = cy - int((r - tick) * math.sin(angle))
+
+            x2 = cx + int(r * math.cos(angle))
+            y2 = cy - int(r * math.sin(angle))
+
+            self.draw_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                cor
+            )
+
+        # -----------------------------------------------------
+        # MARCADORES
+        # -----------------------------------------------------
+
+        self.draw_text(
+            8,
+            cy - 10,
+            str(self.min_val),
+            COR_TEXTO
+        )
+
+        meio = (self.min_val + self.max_val) // 2
+
+        meio_txt = str(meio)
+
+        self.draw_text(
+            cx - (len(meio_txt) * 4),
+            5,
+            meio_txt,
+            COR_TEXTO
+        )
+
+        max_txt = str(self.max_val)
+
+        self.draw_text(
+            w - (len(max_txt) * 8) - 8,
+            cy - 10,
+            max_txt,
+            COR_TEXTO
+        )
+
+        # -----------------------------------------------------
+        # PONTEIRO
+        # -----------------------------------------------------
+
+        span = self.max_val - self.min_val
+
+        if span <= 0:
+            span = 1
+
+        ratio = (
+            self.value - self.min_val
+        ) / span
 
         angle = math.pi - (ratio * math.pi)
 
-        # ponteiro
-        r_ptr = r - 15
+        needle_r = r - 15
 
-        px = cx + int(r_ptr * math.cos(angle))
-        py = cy - int(r_ptr * math.sin(angle))
+        px = cx + int(
+            needle_r * math.cos(angle)
+        )
+
+        py = cy - int(
+            needle_r * math.sin(angle)
+        )
 
         base_w = 4
 
-        bx1 = cx - int(base_w * math.sin(angle))
-        by1 = cy - int(base_w * math.cos(angle))
-
-        bx2 = cx + int(base_w * math.sin(angle))
-        by2 = cy + int(base_w * math.cos(angle))
-
-        COR_PONTEIRO = Colors.RED if hasattr(Colors, 'RED') else 0xF800
-        COR_TEXTO = Colors.WHITE if hasattr(Colors, 'WHITE') else 0xFFFF
-
-        # ponteiro preenchido
-        steps = base_w * 2
-
-        for i in range(steps + 1):
-
-            f = i / steps
-
-            x = int(bx1 + (bx2 - bx1) * f)
-            y = int(by1 + (by2 - by1) * f)
-
-            self.line(x, y, px, py, COR_PONTEIRO)
-
-        # hub dinâmico
-        hub = 6
-
-        self.fill_rect(
-            cx - hub // 2,
-            cy - hub // 2,
-            hub,
-            hub,
-            COR_PONTEIRO
+        bx1 = cx - int(
+            base_w * math.sin(angle)
         )
 
-        self.rect(
-            cx - hub // 2,
-            cy - hub // 2,
-            hub,
-            hub,
-            COR_TEXTO
+        by1 = cy - int(
+            base_w * math.cos(angle)
         )
 
-        # texto
-        text = str(int(val))
-        offset = (len(text) * 4)
+        bx2 = cx + int(
+            base_w * math.sin(angle)
+        )
+
+        by2 = cy + int(
+            base_w * math.cos(angle)
+        )
+
+        for i in range(base_w * 2 + 1):
+
+            f = i / (base_w * 2)
+
+            x = bx1 + (bx2 - bx1) * f
+            y = by1 + (by2 - by1) * f
+
+            self.draw_line(
+                int(x),
+                int(y),
+                px,
+                py,
+                COR_PONTEIRO
+            )
+
+        # -----------------------------------------------------
+        # HUB
+        # -----------------------------------------------------
+
+        if self._renderer:
+
+            hub = 8
+
+            x = self.absolute_x + cx - hub // 2
+            y = self.absolute_y + cy - hub // 2
+
+            self._renderer.fill_rect(
+                x,
+                y,
+                hub,
+                hub,
+                COR_BASE
+            )
+
+            self._renderer.draw_rect(
+                x,
+                y,
+                hub,
+                hub,
+                COR_TEXTO
+            )
+
+        # -----------------------------------------------------
+        # VALOR
+        # -----------------------------------------------------
+
+        txt = str(int(self.value))
 
         self.draw_text(
-            cx - offset,
-            cy + 10,
-            text,
+            cx - (len(txt) * 4),
+            cy + 8,
+            txt,
             COR_TEXTO
         )
-
-        # flush único
-        self.flush()
-
-        self.validate()
