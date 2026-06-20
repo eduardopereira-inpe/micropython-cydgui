@@ -46,40 +46,54 @@ class ChatService:
         tools=None
     ):
 
-        self.callback.buffer = ""
-        self.callback.started_response = False
+        if self.callback:
+
+            self.callback.buffer = ""
+            self.callback.started_response = False
 
         systemprompt = self.system_prompt()
 
         prompt = (
             f"{systemprompt}"
-            "\n" 
+            "\n"
             f"Pergunta do usuario: {question}"
+        )
+
+        use_stream = (
+            self.callback is not None
+            and tools is None
         )
 
         result = self.llm.chat(
             prompt=prompt,
-            stream=(tools is None),
-            callback=self.callback.on_token,
+            stream=use_stream,
+            callback=(
+                self.callback.on_token
+                if self.callback
+                else None
+            ),
             tools=tools
         )
 
-        
+        if self.callback:
 
-        if not self.callback.started_response:
+            if not self.callback.started_response:
 
-            response = result.get(
-                "response",
-                ""
-            )
-
-            if response:
-                self._log(f"[ChatService] Response:\n{result}\n")
-
-                self.callback.on_token(
-                    response
+                response = result.get(
+                    "response",
+                    ""
                 )
 
-        await asyncio.sleep(0.5)
+                if response:
+
+                    self._log(
+                        f"[ChatService] Response:\n{result}\n"
+                    )
+
+                    self.callback.on_token(
+                        response
+                    )
+
+            await asyncio.sleep(0.5)
 
         return result
