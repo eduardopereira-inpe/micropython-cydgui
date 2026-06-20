@@ -31,6 +31,8 @@ from ullmtools.tools import (
     GetWeatherTool
 )
 
+from udotenv.dotenv import load_dotenv
+
 
 # ============================================================
 # LLM Tools
@@ -53,7 +55,7 @@ def create_tools():
         scheduler
     )
 
-    turn_onoff_led = TurnOnOffLedTool()
+    turn_onoff_led = TurnOnOffLedTool(pin=0)
     get_local_time = LocalTimeTool()
     get_local_datetime = LocalDateTimeTool()
     get_lat_lon = GetLatLonTool()
@@ -201,6 +203,8 @@ class TerminalView(View):
         self.println("CYD Terminal")
         self.println("Type 'help'")
         self.println("")
+        
+
 
     # ---------------------------------------------------------
     # Terminal output

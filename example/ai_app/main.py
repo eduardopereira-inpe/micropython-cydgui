@@ -10,26 +10,6 @@ from app_views.terminal import TerminalView
 
 from udotenv.dotenv import load_dotenv
 
-
-from ullmtools import (
-    OpenAI
-)
-
-
-from ullmtools import (
-    ChatService
-)
-
-from ullmtools.tools import (
-    TurnOnOffLedTool,
-    LocalTimeTool,
-    LocalDateTimeTool,
-    Scheduler,
-    ScheduleEventTool,
-    GetLatLonTool,
-    GetWeatherTool
-)
-
 gc.collect()
 config = load_dotenv("env.txt")
 
@@ -52,73 +32,52 @@ gc.collect()
 # Hardware
 # ============================================================
 
-tft_touch = TFTTouch()
+tft_touch = TFTTouch(
+
+    disp_sck=6,
+    disp_mosi=7,
+    disp_miso=5,
+
+    # Display control
+    disp_cs=4,
+    disp_dc=3,
+    disp_rst=2,
+    disp_bl=0,
+# 
+#     # Touch SPI
+#     touch_sck=25,
+#     touch_mosi=32,
+#     touch_miso=39,
+# 
+#     # Touch control
+#     touch_cs=33,
+#     touch_int=36,
+
+    # Features
+    has_touch=False,
+
+    # Display config
+    rotation=0
+  
+
+#     disp_sck=12,
+#     disp_mosi=11,
+#     disp_miso=13,
+#     
+#     # Pinos de Controle Individuais
+#     disp_cs=10,
+#     disp_dc=5,
+#     disp_rst=4,
+#     disp_bl=21,
+#     touch_cs=41,
+#     touch_int=3, # GPIO 36 não existe no S3 DevKit, mudado para 3
+)
+
+
 display = tft_touch.display
 touch = tft_touch.touch
 
 renderer = ILI9341Renderer(display)
-
-
-# ============================================================
-# LLM Tools
-# ============================================================
-
-def create_tools():
-    llm = OpenAI(
-        api_key=API_KEY
-    )
-    scheduler = Scheduler(
-        tool_executor=
-            llm.execute_tool
-    )
-
-    llm.set_scheduler(
-        scheduler
-    )
-
-    schedule_event_tool = ScheduleEventTool(
-        scheduler
-    )
-
-    turn_onoff_led = TurnOnOffLedTool()
-    get_local_time = LocalTimeTool()
-    get_local_datetime = LocalDateTimeTool()
-    get_lat_lon = GetLatLonTool()
-    get_weather = GetWeatherTool()
-
-    # ------------------------------
-    # Register Tools
-    # ------------------------------
-
-    llm.register_tool(tool=schedule_event_tool)
-
-    # self.llm.register_tool(
-    #     tool=GetTemperatureTool()
-    # )
-    
-    llm.register_tool(tool=turn_onoff_led)
-    
-    llm.register_tool(tool=get_local_time)
-
-    llm.register_tool(tool=get_local_datetime)
-
-    llm.register_tool(tool=get_lat_lon)
-
-    llm.register_tool(tool=get_weather)
-
-    # ------------------------------
-
-    callback = (
-        lambda message: print(message)
-    )
-    
-
-    chat = ChatService(
-        llm=llm,
-        callback=callback
-    )
-    
-    return chat, llm
 
 
 # ============================================================
@@ -131,12 +90,8 @@ app = App(
     touch=touch
 )
 
-
-chat, llm = create_tools()
-
-
 app.route("home", HomeView)
-app.route("terminal", TerminalView, parameters={"chat": chat, "llm": llm})
+app.route("terminal", TerminalView)
 
 app.navigate("home", parameters={"ssid": SSID, "ip": ip })
 

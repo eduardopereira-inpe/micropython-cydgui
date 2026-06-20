@@ -1,5 +1,6 @@
 import gc
 import uasyncio as asyncio
+from machine import Pin
 
 from cydgui.core.view import View
 from cydgui.widgets.button import Button
@@ -136,10 +137,34 @@ class WeatherView(View):
         # -----------------------------------------------------
 
         self._startup_task = self.app.create_task(self._startup_routine())
+        self._backligh_task = self.app.create_task(self._backlight_run())
 
     # ---------------------------------------------------------
     # STARTUP ASSÍNCRONO (Busca IP e Inicia o Clima)
     # ---------------------------------------------------------
+    
+    
+    async def _backlight_run(self):
+        
+        print("Starting Backlight")
+        
+        is_on = True
+        btn = Pin(1, Pin.IN, Pin.PULL_UP)
+        backlight = Pin(0, Pin.OUT)
+        while True:
+            
+            if btn.value() == 0:
+                if is_on is True:
+                    is_on = False
+                    backlight.value(0)
+                    print("Light off")
+                else:
+                    is_on = True
+                    backlight.value(1)
+                    print("Light on")
+                
+            await asyncio.sleep_ms(500)
+            
 
     async def _startup_routine(self):
         # 1. Dá um fôlego de 100ms para o MicroPython desenhar a interface inteira na tela
@@ -247,3 +272,5 @@ class WeatherView(View):
 
         if app is not None:
             app.navigate("home")
+
+
