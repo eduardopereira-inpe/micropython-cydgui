@@ -56,6 +56,40 @@ from app_views.vboot import BootView
 # spi = SPI(1, baudrate=40000000, sck=Pin(6), mosi=Pin(7), miso=Pin(5))
 # ==============================================================================
 
+
+# ==============================================================================
+# TABELA DE CONEXÕES: ESP32-S3 N16R8 DEVKIT + TELA TFT 2.8" (COM TOUCH INTEGRADO)
+# ==============================================================================
+#
+# +-------------------+-------------------------+--------------------+---------------------------------------------------------------+
+# | Pino da Tela TFT  | Função do Pino          | ESP32-S3 DevKit    | Observações / Alternativas                                    |
+# +-------------------+-------------------------+--------------------+---------------------------------------------------------------+
+# | VCC               | Alimentação Digital     | 3V3                | Alimenta o circuito lógico da tela.                           |
+# | GND               | Terra / Negativo        | GND                | Conecte ao pino GND da placa.                                 |
+# | CS (Display)      | Chip Select da Tela     | GPIO 10            | Pino nativo de Hardware SPI (IOMUX - Alta Performance).       |
+# | RESET / RST       | Reinício da Tela        | GPIO 3             | Pode ser ligado a qualquer GPIO livre ou ao pino EN da placa. |
+# | DC / RS           | Data / Command          | GPIO 9             | Define se o dado enviado é comando ou imagem.                 |
+# | SDI / MOSI        | Linha de Dados SPI      | GPIO 11            | Pino obrigatório de Hardware SPI (MOSI).                      |
+# | SCK / SCL         | Clock do SPI            | GPIO 12            | Pino obrigatório de Hardware SPI (SCK).                       |
+# | LED / BL          | Luz de Fundo(Backlight) | GPIO 21            | Ligado direto para brilho máximo, ou GPIO 21 para controle PWM|
+# | SDO / MISO        | Retorno de Dados SPI    | GPIO 13            | Pino obrigatório de Hardware SPI (MISO) para Touch/SD.        |
+# | T_CLK             | Clock do Touch          | GPIO 12            | Compartilha o mesmo pino GPIO 12 (Barramento SPI).            |
+# | T_CS              | Chip Select do Touch    | GPIO 4             | Ativa a leitura do toque (Pino dedicado).                     |
+# | T_DIN             | Entrada de Dados Touch  | GPIO 11            | Compartilha o mesmo pino GPIO 11 (Barramento SPI).            |
+# | T_DO              | Saída de Dados Touch    | GPIO 13            | Compartilha o mesmo pino GPIO 13 (Barramento SPI).            |
+# | T_IRQ             | Interrupção do Touch    | Desconectado       | Não é obrigatório (economiza um pino).                        |
+# +-------------------+-------------------------+--------------------+---------------------------------------------------------------+
+#
+#  AVISO CRÍTICO PARA O MODELO N16R8:
+# NÃO UTILIZE os pinos GPIO 35, 36 e 37 em seus projetos. No ESP32-S3 N16R8, eles são 
+# conectados internamente à memória Octal PSRAM integrada de 8MB. Tentar usar esses pinos 
+# como GPIOs comuns causará travamentos automáticos (crashes) e loops de reinicialização.
+#
+# DICA PARA O CÓDIGO (MicroPython):
+# Ao inicializar o barramento SPI no ESP32-S3 DevKit, utilize:
+# spi = SPI(1, baudrate=40000000, sck=Pin(12), mosi=Pin(11), miso=Pin(13))
+# ==============================================================================
+
 tft_touch = TFTTouch(
 
 #     disp_sck=6,
