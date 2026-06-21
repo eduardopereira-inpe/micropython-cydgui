@@ -140,7 +140,7 @@ class BootView(View):
 
         await asyncio.sleep_ms(1000)
 
-        self.status_label.text = "Carregando módulos..."
+        self.status_label.text = "Carregando modulos..."
 
         await asyncio.sleep_ms(1000)
         
