@@ -8,6 +8,7 @@ from cydgui.widgets.crypto import CryptoWidget
 from cydgui.widgets.eye import EyeWidget
 
 from cydgui.utils.constants import Constants
+from cydgui.bl_state import BlState
 
 try:
     import uasyncio as asyncio
@@ -25,6 +26,8 @@ class AssistantView(View):
         "eyes",
         "_eyes_task",
         "info",
+        "bl_state",
+        "_bl_task"
     )
 
     def __init__(self, app, parameters=None):
@@ -33,6 +36,14 @@ class AssistantView(View):
     def build(self):
 
         self.parameters = self.parameters or {}
+
+        self.bl_state = BlState(pin_num=Constants.BL_PIN, pin_btn=Constants.BL_BTN_PIN)
+
+        self._bl_task = self.app.create_task(
+            self.bl_state.monitor()
+        )
+
+
 
         # --------------------------------------------------
         # HEADER
@@ -159,6 +170,13 @@ class AssistantView(View):
             self.clock.stop()
         except Exception:
             pass
+
+        if self._bl_task:
+            try:
+                self._bl_task.cancel()
+            except Exception:
+                pass
+            self._bl_task = None
 
         super().destroy()
 
