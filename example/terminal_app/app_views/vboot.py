@@ -144,7 +144,9 @@ class BootView(View):
 
         await asyncio.sleep_ms(1000)
         
-        self.navigate("matrixrain")
+        self.navigate("assistant")
+        
+#         self.navigate("matrixrain")
         
         # 
 #         parametros_clima = {       

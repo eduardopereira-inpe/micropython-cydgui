@@ -1,199 +1,237 @@
-import uasyncio as asyncio
-import urandom
+from random import randint
 
-from .async_canvas import AsyncCanvas
+from cydgui.core.widget import Widget
+from cydgui.driver.ili9341 import color565
+
+try:
+    import uasyncio as asyncio
+except ImportError:
+    import asyncio
 
 
-class EyeWidget(AsyncCanvas):
+class EyeWidget(Widget):
 
-    __slots__ = (
-        "iris_color",
-        "pupil_shape",
-        "sclera_color",
-        "pupil_color",
-        "blink_interval",
-        "eye_x",
-        "eye_y",
-        "max_offset",
-        "_blink",
-        "_next_blink",
-    )
+    SPRITE_SIZE = 32
 
-    PUPIL_ROUND = "round"
-    PUPIL_DIAMOND = "diamond"
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height)
 
-    def __init__(
-        self,
-        iris_color=0x07E0,
-        pupil_shape="round",
-        blink_interval=(3000, 7000),
-        sclera_color=0xFFFF,
-        pupil_color=0x0000,
-        **kwargs
-    ):
-        super().__init__(**kwargs)
+        self.WHITE = color565(255, 255, 255)
+        self.BLACK = color565(0, 0, 0)
 
-        self.iris_color = iris_color
-        self.pupil_shape = pupil_shape
+        self._display = None
+        self._initialized = False
 
-        self.sclera_color = sclera_color
-        self.pupil_color = pupil_color
+        self.sprite = None
 
-        self.blink_interval = blink_interval
+        self._calculate_layout()
 
-        self.eye_x = 0.0
-        self.eye_y = 0.0
+    def _calculate_layout(self):
 
-        self.max_offset = 0.35
+        center_x = self.x + self.width // 2
 
-        self._blink = 0.0
-        self._next_blink = self._random_blink()
+        self.eye_y = self.y + self.height // 2
 
-    # --------------------------------------------------
-    # Movimento
-    # --------------------------------------------------
+        spacing = self.width // 4
 
-    def look_at(self, dx: float, dy: float):
-        """
-        -1.0 .. +1.0
-        """
+        self.left_eye_x = center_x - spacing
+        self.right_eye_x = center_x + spacing
 
-        if dx < -1:
-            dx = -1
-        if dx > 1:
-            dx = 1
+        self.eye_rx = max(20, self.width // 6)
+        self.eye_ry = max(15, self.height // 4)
 
-        if dy < -1:
-            dy = -1
-        if dy > 1:
-            dy = 1
+        self.max_move_x = max(
+            4,
+            self.eye_rx // 3
+        )
 
-        self.eye_x = dx
-        self.eye_y = dy
+        self.max_move_y = max(
+            3,
+            self.eye_ry // 3
+        )
 
-        self.invalidate()
+        self.left_x = self.left_eye_x
+        self.left_y = self.eye_y
 
-    # --------------------------------------------------
-    # Piscar
-    # --------------------------------------------------
+        self.right_x = self.right_eye_x
+        self.right_y = self.eye_y
 
-    def _random_blink(self):
-        a, b = self.blink_interval
-        return urandom.randint(a, b)
+        self.target_dx = 0
+        self.target_dy = 0
 
-    async def _do_blink(self):
+    def draw(self, renderer):
 
-        steps = 6
+        self._display = renderer.driver
 
-        for i in range(steps):
-            self._blink = (i + 1) / steps
-            self.invalidate()
-            await asyncio.sleep_ms(20)
+        if not self._initialized:
 
-        for i in range(steps):
-            self._blink = 1.0 - ((i + 1) / steps)
-            self.invalidate()
-            await asyncio.sleep_ms(20)
+            self._draw_eyes()
 
-        self._blink = 0
+            self.sprite = self._display.load_sprite(
+                "cydgui/assets/brown_eye.rgb565",
+                self.SPRITE_SIZE,
+                self.SPRITE_SIZE
+            )
 
-    # --------------------------------------------------
-    # Async
-    # --------------------------------------------------
+            self._draw_sprite(
+                self.left_x,
+                self.left_y
+            )
 
-    async def update_async(self):
+            self._draw_sprite(
+                self.right_x,
+                self.right_y
+            )
 
-        self._next_blink -= self.interval_ms
+            self._initialized = True
 
-        if self._next_blink <= 0:
-            await self._do_blink()
-            self._next_blink = self._random_blink()
+        self.validate()
 
-    # --------------------------------------------------
-    # Draw
-    # --------------------------------------------------
+    def _draw_eyes(self):
 
-    def on_draw(self):
+        d = self._display
 
-        r = self.renderer
+        d.fill_ellipse(
+            self.left_eye_x,
+            self.eye_y,
+            self.eye_rx,
+            self.eye_ry,
+            self.WHITE
+        )
 
-        cx = self.width // 2
-        cy = self.height // 2
+        d.fill_ellipse(
+            self.right_eye_x,
+            self.eye_y,
+            self.eye_rx,
+            self.eye_ry,
+            self.WHITE
+        )
 
-        # -----------------------------------------
-        # fechamento da pálpebra
-        # -----------------------------------------
+        d.draw_ellipse(
+            self.left_eye_x,
+            self.eye_y,
+            self.eye_rx,
+            self.eye_ry,
+            self.BLACK
+        )
 
-        eye_h = int(self.height * (1.0 - self._blink))
+        d.draw_ellipse(
+            self.right_eye_x,
+            self.eye_y,
+            self.eye_rx,
+            self.eye_ry,
+            self.BLACK
+        )
 
-        if eye_h <= 2:
+    def _erase_sprite(self, x, y):
+
+        half = self.SPRITE_SIZE // 2
+
+        self._display.fill_rectangle(
+            x - half,
+            y - half,
+            self.SPRITE_SIZE,
+            self.SPRITE_SIZE,
+            self.WHITE
+        )
+
+    def _draw_sprite(self, x, y):
+
+        half = self.SPRITE_SIZE // 2
+
+        self._display.draw_sprite(
+            self.sprite,
+            x - half,
+            y - half,
+            self.SPRITE_SIZE,
+            self.SPRITE_SIZE
+        )
+
+    def _new_target(self):
+
+        self.target_dx = randint(
+            -self.max_move_x,
+            self.max_move_x
+        )
+
+        self.target_dy = randint(
+            -self.max_move_y,
+            self.max_move_y
+        )
+
+    async def update(self):
+
+        if self._display is None:
             return
 
-        # -----------------------------------------
-        # globo ocular
-        # -----------------------------------------
+        self._new_target()
 
-        r.fill_ellipse(
-            self.absolute_x + cx,
-            self.absolute_y + cy,
-            self.width // 2,
-            eye_h // 2,
-            self.sclera_color
-        )
+        while True:
 
-        # -----------------------------------------
-        # deslocamento da íris
-        # -----------------------------------------
-
-        ox = int(
-            self.eye_x *
-            (self.width * self.max_offset / 2)
-        )
-
-        oy = int(
-            self.eye_y *
-            (eye_h * self.max_offset / 2)
-        )
-
-        iris_r = min(self.width, eye_h) // 4
-
-        iris_x = self.absolute_x + cx + ox
-        iris_y = self.absolute_y + cy + oy
-
-        # -----------------------------------------
-        # íris
-        # -----------------------------------------
-
-        r.fill_circle(
-            iris_x,
-            iris_y,
-            iris_r,
-            self.iris_color
-        )
-
-        # -----------------------------------------
-        # pupila
-        # -----------------------------------------
-
-        pupil_r = iris_r // 2
-
-        if self.pupil_shape == self.PUPIL_ROUND:
-
-            r.fill_circle(
-                iris_x,
-                iris_y,
-                pupil_r,
-                self.pupil_color
+            target_left_x = (
+                self.left_eye_x +
+                self.target_dx
             )
 
-        else:
-
-            r.fill_diamond(
-                iris_x,
-                iris_y,
-                pupil_r,
-                self.pupil_color
+            target_left_y = (
+                self.eye_y +
+                self.target_dy
             )
 
+            target_right_x = (
+                self.right_eye_x +
+                self.target_dx
+            )
 
+            target_right_y = (
+                self.eye_y +
+                self.target_dy
+            )
 
+            self._erase_sprite(
+                self.left_x,
+                self.left_y
+            )
+
+            self._erase_sprite(
+                self.right_x,
+                self.right_y
+            )
+
+            if self.left_x < target_left_x:
+                self.left_x += 1
+            elif self.left_x > target_left_x:
+                self.left_x -= 1
+
+            if self.left_y < target_left_y:
+                self.left_y += 1
+            elif self.left_y > target_left_y:
+                self.left_y -= 1
+
+            if self.right_x < target_right_x:
+                self.right_x += 1
+            elif self.right_x > target_right_x:
+                self.right_x -= 1
+
+            if self.right_y < target_right_y:
+                self.right_y += 1
+            elif self.right_y > target_right_y:
+                self.right_y -= 1
+
+            self._draw_sprite(
+                self.left_x,
+                self.left_y
+            )
+
+            self._draw_sprite(
+                self.right_x,
+                self.right_y
+            )
+
+            if (
+                self.left_x == target_left_x and
+                self.left_y == target_left_y
+            ):
+                self._new_target()
+
+            await asyncio.sleep_ms(40)

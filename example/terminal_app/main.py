@@ -17,7 +17,9 @@ from app_views.terminal import TerminalView
 from app_views.memory_graph import MemoryGraphView
 from app_views.speeddometer import SpeedometerView
 from app_views.weather import WeatherView
+from app_views.assistant import AssistantView
 from app_views.matrixrain import MatrixRainView
+from app_views.eye import EyeView
 from app_views.vboot import BootView
 
 
@@ -112,7 +114,9 @@ app = App(
     touch=touch
 )
 
+app.route("assistant", AssistantView)
 app.route("matrixrain", MatrixRainView)
+app.route("eye", EyeView)
 app.route("boot", BootView)
 app.route("home", HomeView)
 app.route("terminal", TerminalView)
