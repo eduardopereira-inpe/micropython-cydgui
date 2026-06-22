@@ -140,18 +140,20 @@ class BootView(View):
 
         await asyncio.sleep_ms(1000)
 
-        self.status_label.text = "Carregando modulos..."
+        self.status_label.text = "Carregando módulos..."
 
         await asyncio.sleep_ms(1000)
         
-        self.navigate("assistant")
+        parametros_clima = {       
+                "api_key": API_OPENWEATHER
+            }
+        
+        self.navigate("assistant", parameters=parametros_clima)
         
 #         self.navigate("matrixrain")
         
         # 
-#         parametros_clima = {       
-#                 "api_key": API_OPENWEATHER
-#             }
+
 # 
 # 
 #         self.navigate("weather_dashboard", parameters=parametros_clima)
