@@ -1,13 +1,12 @@
 import gc
+
 from cydgui.core.view import View
 from cydgui.widgets.label import Label
-from cydgui.widgets.canvas import Canvas
 from cydgui.utils.colors import Colors
 
 from connectivity.wifi import connect_to_wifi, WLAN
 from udotenv.dotenv import load_dotenv
 
-from .home import create_logo
 
 try:
     import uasyncio as asyncio
@@ -19,7 +18,6 @@ except ImportError:
 class BootView(View):
 
     __slots__ = (
-        "logo",
         "status_label",
         "_startup_task",
     )
@@ -54,19 +52,7 @@ class BootView(View):
                 align=Label.CENTER
             )
         )
-
-        # Logo central
-        self.logo = Canvas(
-            x=55,
-            y=75,
-            width=130,
-            height=90,
-            bg=Colors.BLACK,
-            touchable=False,
-            on_draw=create_logo
-        )
-
-        self.add(self.logo)
+      
 
         # Status
         self.status_label = Label(
@@ -74,7 +60,7 @@ class BootView(View):
             y=180,
             width=240,
             height=20,
-            text="Inicializando sistema...",
+            text="Startup System...",
             color=Colors.YELLOW,
             align=Label.CENTER
         )
@@ -116,7 +102,7 @@ class BootView(View):
 
         await asyncio.sleep_ms(100)
 
-        self.status_label.text = "Conectando Wi-Fi..."
+        self.status_label.text = "Connecting to Wi-Fi..."
         
         await asyncio.sleep_ms(100)
         
@@ -144,21 +130,13 @@ class BootView(View):
 
         await asyncio.sleep_ms(1000)
 
-        self.navigate("slider")
         
-        # parametros_clima = {       
-        #         "api_key": API_OPENWEATHER
-        #     }
+        parametros_clima = {       
+                "api_key": API_OPENWEATHER
+            }
         
-        # self.navigate("assistant", parameters=parametros_clima)
-        
-#         self.navigate("matrixrain")
-        
-        # 
+        self.navigate("assistant", parameters=parametros_clima)        
 
-# 
-# 
-#         self.navigate("weather_dashboard", parameters=parametros_clima)
 
     def destroy(self):
 
@@ -171,4 +149,3 @@ class BootView(View):
 
         super().destroy()
 
-#         self.navigate("home")

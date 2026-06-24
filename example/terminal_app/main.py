@@ -19,6 +19,8 @@ from app_views.speeddometer import SpeedometerView
 from app_views.weather import WeatherView
 from app_views.assistant import AssistantView
 from app_views.matrixrain import MatrixRainView
+
+from app_views.slidersample import SliderView
 from app_views.eye import EyeView
 from app_views.vboot import BootView
 
@@ -157,6 +159,7 @@ app.route("terminal", TerminalView)
 app.route("memory_graph", MemoryGraphView)
 app.route("speedometer", SpeedometerView)
 app.route("weather_dashboard", WeatherView)
+app.route("slider", SliderView)
 
 
 app.navigate("boot")
