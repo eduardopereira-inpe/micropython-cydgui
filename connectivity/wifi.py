@@ -115,10 +115,8 @@ def connect_to_wifi(ssid, password, verbose=True):
     if WLAN.isconnected():
 
         _log("Wi-Fi connected.", verbose)
-        _log(WLAN.ifconfig(), verbose)
+        _log(WLAN.ifconfig(), verbose)        
         
-        
-
         for tentativa in range(2):
             try:
                 # Tenta sincronizar com o servidor NTP padrão
@@ -134,7 +132,8 @@ def connect_to_wifi(ssid, password, verbose=True):
                     "[wifi] NTP synchronization failed: {}".format(e),
                     verbose,
                 )
-                time.sleep_ms(2000)  
+        time.sleep_ms(2000)
+        return True
 
     _log("Wi-Fi connection failed.", verbose)
     return False
