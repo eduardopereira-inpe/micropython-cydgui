@@ -75,7 +75,8 @@ class Touch:
             x_min=100,
             x_max=1962,
             y_min=100,
-            y_max=1900
+            y_max=1900,
+            rotation=0
             ):
 
         self.spi = spi
@@ -97,6 +98,8 @@ class Touch:
         
         self._invert_x = invert_x
         self._invert_y = invert_y
+        
+        self.rotation = rotation
 
         self.x_multiplier = width / (x_max - x_min)
         self.x_add = -x_min * self.x_multiplier
@@ -212,23 +215,27 @@ class Touch:
             tuple[int, int]: Normalized ``(x, y)`` in display coordinates.
         """
 
-        x = int(
-            self.x_multiplier * x +
-            self.x_add
-        )
+        x = int(self.x_multiplier * x + self.x_add)
+        y = int(self.y_multiplier * y + self.y_add)
 
-        y = int(
-            self.y_multiplier * y +
-            self.y_add
-        )
-        
         if self._invert_x:
             x = self.width - 1 - x
 
         if self._invert_y:
             y = self.height - 1 - y
 
-        return x, y
+        # Rotation
+        if self.rotation == 0:
+            return x, y
+
+        elif self.rotation == 90:
+            return y, self.width - 1 - x
+
+        elif self.rotation == 180:
+            return self.width - 1 - x, self.height - 1 - y
+
+        elif self.rotation == 270:
+            return self.height - 1 - y, x
 
     #################################################################
     # Raw Touch

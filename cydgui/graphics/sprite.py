@@ -31,6 +31,10 @@ class Sprite:
         "_frame",
         "_x",
         "_y",
+        "_vx",
+        "_vy",
+        "_dx",
+        "_dy",
         "_enabled",
         "_opaque",
         "_flip_x",
@@ -70,6 +74,12 @@ class Sprite:
 
         self._flip_x = False
         self._flip_y = False
+        self._vx = 0.0
+        self._vy = 0.0
+
+        # Movement resolution (pixels)
+        self._dx = 1.0
+        self._dy = 1.0
 
     # ---------------------------------------------------------
     # Position
@@ -77,7 +87,7 @@ class Sprite:
 
     @property
     def x(self):
-        return self._x
+        return int(self._x)
 
     @x.setter
     def x(self, value):
@@ -85,7 +95,7 @@ class Sprite:
 
     @property
     def y(self):
-        return self._y
+        return int(self._y)
 
     @y.setter
     def y(self, value):
@@ -94,6 +104,33 @@ class Sprite:
     @property
     def position(self):
         return (self._x, self._y)
+    
+    @property
+    def vx(self):
+        return self._vx
+
+
+    @property
+    def vy(self):
+        return self._vy
+    
+    def set_velocity(self, vx=0.0, vy=0.0):
+        """Set sprite velocity."""
+
+        self._vx = float(vx)
+        self._vy = float(vy)
+        
+    def stop_motion(self):
+        """Stop sprite movement."""
+
+        self._vx = 0.0
+        self._vy = 0.0
+        
+    def reverse_x(self):
+        self._vx = -self._vx
+        
+    def reverse_y(self):
+        self._vy = -self._vy
 
     def move_to(self, x, y):
         self._x = int(x)
@@ -132,22 +169,53 @@ class Sprite:
     def opaque(self, value):
         self._opaque = bool(value)
 
+    # ---------------------------------------------------------
+    # Flip
+    # ---------------------------------------------------------
+
     @property
     def flip_x(self):
+        """Return horizontal flip state."""
         return self._flip_x
 
-    @flip_x.setter
-    def flip_x(self, value):
-        self._flip_x = bool(value)
 
     @property
     def flip_y(self):
+        """Return vertical flip state."""
         return self._flip_y
 
-    @flip_y.setter
-    def flip_y(self, value):
-        self._flip_y = bool(value)
 
+    def set_flip(
+        self,
+        horizontal=False,
+        vertical=False,
+    ):
+        """Set sprite mirroring.
+
+        Args:
+            horizontal: Mirror horizontally.
+            vertical: Mirror vertically.
+        """
+
+        horizontal = bool(horizontal)
+        vertical = bool(vertical)
+
+        if (
+            horizontal == self._flip_x and
+            vertical == self._flip_y
+        ):
+            return
+
+        self._flip_x = horizontal
+        self._flip_y = vertical
+
+        self._update_frame()
+
+
+    def reset_flip(self):
+        """Restore original orientation."""
+
+        self.set_flip(False, False)
     # ---------------------------------------------------------
     # Animation control
     # ---------------------------------------------------------
@@ -195,6 +263,10 @@ class Sprite:
 
     def _update_frame(self):
         """Resolve current SpriteFrame."""
+        
+        
+        self._x += self._vx * self._dx
+        self._y += self._vy * self._dx
 
         animation = self._animator.animation
 
@@ -208,5 +280,8 @@ class Sprite:
             self._frame = None
             return
 
-        # frame is already an index (int)
-        self._frame = self._sheet.get_frame(frame)
+        self._frame = self._sheet.get_frame(
+            frame,
+            flip_x=self._flip_x,
+            flip_y=self._flip_y,
+        )

@@ -94,6 +94,7 @@ class TFTTouch:
                 int_handler=self._touch_handler,
                 invert_x=Constants.TOUCH_INVERT_X,
                 invert_y=Constants.TOUCH_INVERT_Y,
+                rotation=rotation
             )
 
         self.last_tap = (-1, -1)

@@ -126,16 +126,37 @@ class SpriteSheet:
     # Frame access
     # ---------------------------------------------------------
 
-    def get_frame(self, index):
-        """Return a SpriteFrame by index."""
+    def get_frame(
+        self,
+        index,
+        flip_x=False,
+        flip_y=False,
+    ):
+        """Return a SpriteFrame."""
+
+        key = (
+            index,
+            flip_x,
+            flip_y,
+        )
 
         if self._cache_size != 0:
-            frame = self._cache.get(index)
+
+            frame = self._cache.get(key)
+
             if frame is not None:
                 return frame
 
         frame = self._load_frame(index)
-        self._add_cache(index, frame)
+
+        if flip_x or flip_y:
+            frame = self._transform(
+                frame,
+                flip_x,
+                flip_y,
+            )
+
+        self._add_cache(key, frame)
 
         return frame
 
@@ -149,21 +170,23 @@ class SpriteSheet:
         self._cache.clear()
         self._cache_order.clear()
 
-    def _add_cache(self, index, frame):
-        """Insert frame into LRU cache."""
+    def _add_cache(self, key, frame):
+        """Insert frame into cache."""
 
         if self._cache_size == 0:
             return
 
-        if index in self._cache:
+        if key in self._cache:
             return
 
         while len(self._cache_order) >= self._cache_size:
+
             old = self._cache_order.pop(0)
+
             del self._cache[old]
 
-        self._cache[index] = frame
-        self._cache_order.append(index)
+        self._cache[key] = frame
+        self._cache_order.append(key)
 
     # ---------------------------------------------------------
     # Frame loading
@@ -204,6 +227,121 @@ class SpriteSheet:
             buffer=buffer,
             width=self._frame_width,
             height=self._frame_height,
+        )
+    #################################################################
+    # Image transforms
+    #################################################################
+
+    def _transform(
+        self,
+        frame,
+        flip_x=False,
+        flip_y=False,
+    ):
+        """Return a transformed SpriteFrame.
+
+        Args:
+            frame: Source SpriteFrame.
+            flip_x: Mirror horizontally.
+            flip_y: Mirror vertically.
+
+        Returns:
+            SpriteFrame: Transformed frame.
+        """
+
+        if not (flip_x or flip_y):
+            return frame
+
+        return SpriteFrame(
+            index=frame.index,
+            buffer=self._flip(
+                frame.buffer,
+                flip_x=flip_x,
+                flip_y=flip_y,
+            ),
+            width=frame.width,
+            height=frame.height,
+        )
+
+
+    def _flip(
+        self,
+        source,
+        flip_x=False,
+        flip_y=False,
+    ):
+        """Flip an RGB565 image.
+
+        This method performs horizontal, vertical or combined flips
+        using a single implementation.
+
+        Args:
+            source: Source RGB565 buffer.
+            flip_x: Mirror horizontally.
+            flip_y: Mirror vertically.
+
+        Returns:
+            bytearray: Flipped image buffer.
+        """
+
+        w = self._frame_width
+        h = self._frame_height
+
+        stride = w * 2
+
+        dst = bytearray(len(source))
+
+        for y in range(h):
+
+            src_row = y * stride
+
+            if flip_y:
+                dst_row = (h - 1 - y) * stride
+            else:
+                dst_row = src_row
+
+            for x in range(w):
+
+                src = src_row + x * 2
+
+                if flip_x:
+                    dst_col = (w - 1 - x) * 2
+                else:
+                    dst_col = x * 2
+
+                dst_index = dst_row + dst_col
+
+                dst[dst_index] = source[src]
+                dst[dst_index + 1] = source[src + 1]
+
+        return dst
+
+
+    def _flip_x(self, source):
+        """Mirror image horizontally."""
+
+        return self._flip(
+            source,
+            flip_x=True,
+        )
+
+
+    def _flip_y(self, source):
+        """Mirror image vertically."""
+
+        return self._flip(
+            source,
+            flip_y=True,
+        )
+
+
+    def _flip_xy(self, source):
+        """Mirror image horizontally and vertically."""
+
+        return self._flip(
+            source,
+            flip_x=True,
+            flip_y=True,
         )
 
     # ---------------------------------------------------------
