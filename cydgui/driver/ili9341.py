@@ -214,6 +214,59 @@ class Display(object):
             line = bytearray(w * 2 * hlines)
         for y in range(0, h, hlines):
             self.block(0, y, w - 1, y + hlines - 1, line)
+            
+    def load_background(self, path):
+        """
+        Carrega uma imagem RGB565 do tamanho da tela.
+        """
+        with open(path, "rb") as f:
+            self.background = f.read()
+
+
+    def draw_background(self):
+        """
+        Desenha o background inteiro de uma única vez.
+        """
+        self.block(
+            0,
+            0,
+            self.width - 1,
+            self.height - 1,
+            self.background
+        )
+
+
+    def restore_background(self, x, y, w, h):
+        """
+        Restaura uma região do background.
+        """
+
+        if not hasattr(self, "background"):
+            return
+
+        bytes_per_pixel = 2
+        line_size = self.width * bytes_per_pixel
+
+        buf = bytearray(w * h * bytes_per_pixel)
+
+        dst = 0
+
+        for row in range(h):
+            src = ((y + row) * line_size) + (x * bytes_per_pixel)
+
+            size = w * bytes_per_pixel
+
+            buf[dst:dst + size] = self.background[src:src + size]
+
+            dst += size
+
+        self.block(
+            x,
+            y,
+            x + w - 1,
+            y + h - 1,
+            buf
+        )
 
     def display_off(self):
         """Turn display off."""

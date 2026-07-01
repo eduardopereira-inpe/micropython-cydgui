@@ -110,6 +110,10 @@ class App:
         """Return current active screen."""
 
         return self._navigation.current
+    
+    @property
+    def touch(self):
+        return self._touch
 
     def set_screen(
         self,

@@ -10,17 +10,18 @@ widget system.
 Responsibilities
 ----------------
 - Hold a Sprite instance.
-- Delegate position to the Sprite.
+- Render the current sprite frame.
 - Update sprite animation.
-- Render the current frame.
+- Execute an optional behavior callback.
 
-The widget contains no animation logic and does not manipulate
-Sprite internals.
+The widget contains no animation logic. Behaviors can be
+attached dynamically using ``set_behavior()``.
 """
 
 from time import ticks_ms
 
 from cydgui.core.widget import Widget
+import uasyncio as asyncio
 
 
 class SpriteWidget(Widget):
@@ -28,15 +29,24 @@ class SpriteWidget(Widget):
 
     __slots__ = (
         "_sprite",
+        "_camera_x",
+        "_camera_y",
+        "_behavior",
+        "state",
+        "touch",
     )
 
     def __init__(
         self,
         sprite,
-        x=None,
-        y=None,
+        x=0,
+        y=0,
         width=None,
         height=None,
+        camera_x=0,
+        camera_y=0,
+        behavior=None,
+        touch=None,
         **kwargs
     ):
         """Initialize the widget.
@@ -46,35 +56,66 @@ class SpriteWidget(Widget):
                 Sprite instance.
 
             x:
-                Optional initial X position.
+                Viewport X.
 
             y:
-                Optional initial Y position.
+                Viewport Y.
 
             width:
-                Optional widget width.
+                Viewport width.
 
             height:
-                Optional widget height.
+                Viewport height.
+
+            camera_x:
+                Camera X position.
+
+            camera_y:
+                Camera Y position.
+
+            behavior:
+                Optional behavior callback.
+
+            touch:
+                Optional touch device passed to the behavior.
         """
 
         self._sprite = sprite
 
-        if x is not None:
-            sprite.x = x
+        self._camera_x = int(camera_x)
+        self._camera_y = int(camera_y)
 
-        if y is not None:
-            sprite.y = y
+        self._behavior = behavior
+
+        #
+        # Public runtime state used by behaviors.
+        #
+
+        self.state = {}
+
+        #
+        # Optional touch device.
+        #
+
+        self.touch = touch
 
         if width is None:
-            width = sprite.frame.width if sprite.frame else sprite.sheet.frame_width
+            width = (
+                sprite.frame.width
+                if sprite.frame
+                else sprite.sheet.frame_width
+            )
 
         if height is None:
-            height = sprite.frame.height if sprite.frame else sprite.sheet.frame_height
+            height = (
+                sprite.frame.height
+                if sprite.frame
+                else sprite.sheet.frame_height
+            )
 
         super().__init__(
-            x=sprite.x,
-            y=sprite.y,
+            x=x,
+            y=y,
             width=width,
             height=height,
             **kwargs
@@ -86,50 +127,76 @@ class SpriteWidget(Widget):
 
     @property
     def sprite(self):
-        """Return the wrapped sprite."""
+        """Return sprite."""
         return self._sprite
 
     #################################################################
-    # Position (delegated to Sprite)
+    # Camera
     #################################################################
 
     @property
-    def x(self):
-        """Return sprite X position."""
-        return self._sprite.x
+    def camera_x(self):
+        """Return camera X."""
+        return self._camera_x
 
-    @x.setter
-    def x(self, value):
-        self._sprite.x = int(value)
-
-    @property
-    def y(self):
-        """Return sprite Y position."""
-        return self._sprite.y
-
-    @y.setter
-    def y(self, value):
-        self._sprite.y = int(value)
+    @camera_x.setter
+    def camera_x(self, value):
+        self._camera_x = int(value)
 
     @property
-    def position(self):
-        """Return sprite position."""
-        return self._sprite.position
+    def camera_y(self):
+        """Return camera Y."""
+        return self._camera_y
 
-    def move_to(self, x, y):
-        """Move the sprite."""
-        self._sprite.move_to(x, y)
+    @camera_y.setter
+    def camera_y(self, value):
+        self._camera_y = int(value)
 
-    def move_by(self, dx, dy):
-        """Move the sprite by an offset."""
-        self._sprite.move_by(dx, dy)
+    @property
+    def camera(self):
+        """Return camera position."""
+        return (
+            self._camera_x,
+            self._camera_y,
+        )
+
+    def set_camera(self, x, y):
+        """Set camera position."""
+
+        self._camera_x = int(x)
+        self._camera_y = int(y)
+
+    def move_camera(self, dx, dy):
+        """Move camera."""
+
+        self._camera_x += int(dx)
+        self._camera_y += int(dy)
+
+    #################################################################
+    # Behavior
+    #################################################################
+
+    @property
+    def behavior(self):
+        """Return current behavior."""
+        return self._behavior
+
+    def set_behavior(self, callback):
+        """Attach a behavior callback.
+
+        Args:
+            callback:
+                Callable receiving this widget.
+        """
+
+        self._behavior = callback
 
     #################################################################
     # Animation shortcuts
     #################################################################
 
     def play(self, name):
-        """Play an animation."""
+        """Play animation."""
         self._sprite.play(name)
 
     def stop(self):
@@ -149,18 +216,19 @@ class SpriteWidget(Widget):
         horizontal=False,
         vertical=False,
     ):
-        """Mirror the sprite."""
+        """Mirror sprite."""
+
         self._sprite.set_flip(
             horizontal=horizontal,
             vertical=vertical,
         )
 
     #################################################################
-    # Widget lifecycle
+    # Update
     #################################################################
 
     def update(self):
-        """Update sprite animation."""
+        """Update sprite."""
 
         if not self.visible:
             return
@@ -172,12 +240,24 @@ class SpriteWidget(Widget):
             ticks_ms()
         )
 
+        if self._behavior is not None:
+            self._behavior(self)
+            
+            
+    async def start(self):
+
+        while True:
+
+            self.update()
+
+            await asyncio.sleep_ms(16)
+
     #################################################################
-    # Rendering
+    # Draw
     #################################################################
 
     def draw(self, renderer):
-        """Render the current frame."""
+        """Render sprite inside the viewport."""
 
         if not self.visible:
             return
@@ -187,10 +267,34 @@ class SpriteWidget(Widget):
         if frame is None:
             return
 
-        renderer.draw_sprite(
+        screen_x = (
+            self.x +
+            self._sprite.x -
+            self._camera_x
+        )
+
+        screen_y = (
+            self.y +
+            self._sprite.y -
+            self._camera_y
+        )
+
+        #
+        # Quick rejection.
+        #
+
+        if (
+            screen_x + frame.width <= self.x or
+            screen_y + frame.height <= self.y or
+            screen_x >= self.x + self.width or
+            screen_y >= self.y + self.height
+        ):
+            return
+
+        renderer.driver.draw_sprite(
             frame.buffer,
-            self._sprite.x,
-            self._sprite.y,
+            screen_x,
+            screen_y,
             frame.width,
             frame.height,
         )
